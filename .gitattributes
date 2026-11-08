@@ -1,0 +1,3 @@
+# Preserve built files exactly: offline downloads verify their byte hashes.
+dist/** -text
+web/games/** -text
