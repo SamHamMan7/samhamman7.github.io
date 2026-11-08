@@ -1,0 +1,51 @@
+Official Pokémon Showdown offline resource subset.
+Source: https://pokemonshowdown.com/credits
+Sprites: https://play.pokemonshowdown.com/sprites/
+Audio: https://play.pokemonshowdown.com/audio/
+
+The code license does not license Pokémon sprites or audio. Pokémon and related artwork/audio remain the property of their respective owners. This project is unaffiliated with Nintendo, Game Freak, The Pokémon Company, or Pokémon Showdown.
+
+Upstream battle-animations.ts licensing notices (verbatim):
+/**
+ * Pokemon Showdown Battle Animations
+ *
+ * There are the specific resource files and scripts for misc animations
+ *
+ * Licensing note: PS's client has complicated licensing:
+ * - The client as a whole is AGPLv3
+ * - The battle replay/animation engine (battle-*.ts) by itself is MIT
+ *
+ * @author Guangcong Luo <guangcongluo@gmail.com>
+ * @license MIT
+ */
+
+import type { Battle, HPColor, Pokemon, Side, WeatherState } from './battle';
+import type { BattleSceneStub } from './battle-scene-stub';
+import { BattleMoveAnims } from './battle-animations-moves';
+import { BattleLog, eHTML } from './battle-log';
+import { type BattleBGM, BattleSound } from './battle-sound';
+import { Dex, TL, toID, type ID, type SpriteData } from './battle-dex';
+import { BattleNatures } from './battle-dex-data';
+import { BattleTooltips } from './battle-tooltips';
+import { BattleTextParser, type Args, type KWArgs } from './battle-text-parser';
+
+/*
+
+Most of this file is: CC0 (public domain)
+  <http://creativecommons.org/publicdomain/zero/1.0/>
+
+This license DOES extend to all images in the fx/ folder, with the exception of icicle.png, lightning.png, and bone.png.
+
+icicle.png and lightning.png by Clint Bellanger are triple-licensed GPLv2/GPLv3/CC-BY-SA-3.0.
+  <http://opengameart.org/content/icicle-spell>
+  <http://opengameart.org/content/lightning-shock-spell>
+
+rocks.png, rock1.png, rock2.png by PO user "Gilad" is licensed GPLv3.
+
+This license DOES NOT extend to any images in the sprites/ folder.
+
+This license DOES NOT extend to any other files in this repository.
+
+*/
+
+

@@ -1,0 +1,1 @@
+var Config={testclient:true,version:'offline',bannedHosts:[],whitelist:[],customcolors:{},routes:{client:location.host,dex:'dex.pokemonshowdown.com',replays:'replay.pokemonshowdown.com',users:'pokemonshowdown.com/users'},defaultserver:{id:'offline',host:location.hostname,port:443,registered:false},roomsFirstOpenScript:function(){}}; Config.server=Config.defaultserver;
