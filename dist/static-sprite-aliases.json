@@ -1,0 +1,103 @@
+{
+  "schema": "static-sprite-aliases-v1",
+  "entries": [
+    {
+      "path": "/sprites/gen5/torchic-f.png",
+      "source": "/sprites/gen5/torchic.png",
+      "sha256": "a749ad2b43925946ef558bfef05fd71d1707980ea65f90685806c31d2fdff86b",
+      "gitBlob": "e79bd175884300a0761b09441c60581440d7641d",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-shiny/torchic-f.png",
+      "source": "/sprites/gen5-shiny/torchic.png",
+      "sha256": "943d5df8815b869f801ae51978e83205de35cc1f880fcf64ed75e4ac96040935",
+      "gitBlob": "50631408a13e59a33314448895f91e28af256957",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-back/cacturne-f.png",
+      "source": "/sprites/gen5-back/cacturne.png",
+      "sha256": "89ea94301176c1640cdb024b707e13c85e073b37f1c91e3f0b0a8b039cde53b2",
+      "gitBlob": "771dea815c6b963df0258e36c8334461375f1b66",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-back-shiny/cacturne-f.png",
+      "source": "/sprites/gen5-back-shiny/cacturne.png",
+      "sha256": "9638d070bce526089403854628b649396216e4a739697b2b294c1507d6868312",
+      "gitBlob": "e0dbbab16969086f0e689b0a0beee3f486640429",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-back/staraptor-f.png",
+      "source": "/sprites/gen5-back/staraptor.png",
+      "sha256": "4f84c9dd54678464846294ca95e8cc35ca4e1be35c07a7e38efc1b63746f01ce",
+      "gitBlob": "b0cecc3301e864d86ec8488299f26c940a66aafd",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-back-shiny/staraptor-f.png",
+      "source": "/sprites/gen5-back-shiny/staraptor.png",
+      "sha256": "40bdecbe7946bfc9f0f39136eaa6dea981595a230ecac449f012a4345f5b12b7",
+      "gitBlob": "4b106a93e1ce1d1d12ac9e83fa1a9183d45425ba",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-back/combee-f.png",
+      "source": "/sprites/gen5-back/combee.png",
+      "sha256": "925ec9c170e730425f9112c9ef1f0d6a2daf80038777f88174cdafebedbd27ee",
+      "gitBlob": "1f5cf09f58ef531ac3052c1e84fa19d30e62c891",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-back-shiny/combee-f.png",
+      "source": "/sprites/gen5-back-shiny/combee.png",
+      "sha256": "f90fe8831a44a1cca80ed8e46fc8129992b0ad56ac8d3e67b0e1ef0befffb48b",
+      "gitBlob": "29e3e98f26d361d99608156d1b5554300fba38c6",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-back/pachirisu-f.png",
+      "source": "/sprites/gen5-back/pachirisu.png",
+      "sha256": "ddf1e5ecb7f22c30c205b0a51d4d398df9a4858f7817752ad5b86b40e6280d44",
+      "gitBlob": "43e05859bde3955740d31fe2c108ac63a0d790ac",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-back-shiny/pachirisu-f.png",
+      "source": "/sprites/gen5-back-shiny/pachirisu.png",
+      "sha256": "71015623e157407d707c9f24c6a11bc5a0f5c356ded869fe0b4f418b10ffb142",
+      "gitBlob": "5f8681b89cafe47911a2d4b73a658d0cd85bf380",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5/buizel-f.png",
+      "source": "/sprites/gen5/buizel.png",
+      "sha256": "1f1a4ddf53dc8fdc1ebed552c386e6a96f595613760cd2f9389a86ffd2237d4a",
+      "gitBlob": "8e060cb80c92d18b40b298851f895b0bba01b4ee",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-shiny/buizel-f.png",
+      "source": "/sprites/gen5-shiny/buizel.png",
+      "sha256": "82f8e7c5c7c0a8dba31b94b176ba7350ae1b7bb6efc21ae9aeefbc19d381949e",
+      "gitBlob": "7473aa8146a158f0dddcc1b12b0029063827d6e8",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5/floatzel-f.png",
+      "source": "/sprites/gen5/floatzel.png",
+      "sha256": "c58981ab5b5c9eea30eeaa6e8a35bfb91144112c09c703a40d331dd279df7869",
+      "gitBlob": "3aaeffb2fafc7d3681a73202bbd0cfbe0d4fc912",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    },
+    {
+      "path": "/sprites/gen5-shiny/floatzel-f.png",
+      "source": "/sprites/gen5-shiny/floatzel.png",
+      "sha256": "73abf2e50aa2058e56598ed6c36e8e5bdc3806b409099eac023fea9145f3526d",
+      "gitBlob": "785cd1c9e703cab4f9cb56f51a75264ee0ca94c3",
+      "reason": "Optional female static variant is absent on upstream asset host (HTTP 404); serve unchanged bundled base PNG. Cosmetic only; no mechanics/fallback code change."
+    }
+  ]
+}

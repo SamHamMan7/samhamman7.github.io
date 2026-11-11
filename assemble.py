@@ -157,7 +157,7 @@ def finalize():
     with zipfile.ZipFile(source_out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
         for p in sorted(SNAPSHOT.rglob('*')):
             if p.is_file() and 'node_modules' not in p.relative_to(SNAPSHOT).parts: z.write(p,p.relative_to(SNAPSHOT).as_posix())
-        for p in [ROOT / 'assemble.py', ROOT / 'apply-bot-update.py', ROOT / 'build-browser.mjs', ROOT / 'README.md', ROOT / 'verify-practice.mjs', *(p for p in (ROOT / 'web').rglob('*') if p.is_file())]:
+        for p in [ROOT / 'assemble.py', ROOT / 'apply-bot-update.py', ROOT / 'build-browser.mjs', ROOT / 'README.md', ROOT / 'verify-practice.mjs', ROOT / 'verify-offline.mjs', *(p for p in (ROOT / 'web').rglob('*') if p.is_file())]:
             z.write(p,'browser-edition/' + p.relative_to(ROOT).as_posix())
     if source_out.stat().st_size > 25*1024*1024:
         raise RuntimeError('Source archive exceeds the hosting asset size limit')

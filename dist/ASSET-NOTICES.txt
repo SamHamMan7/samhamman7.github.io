@@ -49,3 +49,5 @@ This license DOES NOT extend to any other files in this repository.
 */
 
 
+
+Fourteen optional female static sprite URLs absent upstream use unchanged bundled base PNGs. See static-sprite-aliases.json for exact source paths and hashes. No Pokémon mechanics or sprite fallback code is modified.

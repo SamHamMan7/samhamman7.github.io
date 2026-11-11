@@ -23,6 +23,8 @@ jobs:
           node-version: '24'
       - name: Build the reviewed bot source and matching offline download
         run: python3 apply-bot-update.py
+      - name: Verify all offline pack bytes and static sprite aliases
+        run: node verify-offline.mjs
       - name: Check math practice
         run: node verify-practice.mjs
       - uses: actions/configure-pages@v5
