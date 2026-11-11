@@ -36,3 +36,33 @@ Physical phone performance has not been verified.
 The Pokémon bot was built with AI assistance. Preserve its AGPL-3.0 license,
 third-party notices, artwork notices, and corresponding-source ZIP. Pokémon
 artwork retains its respective owners' rights. See `dist/credits.html`.
+
+## November 2026 bot update
+
+The battle workers now include the validated Very Strong RandBats controller
+from bot commit `fbe416b`. The personal pages, static/silent browser adapter,
+prepared media and other games are preserved. No Arena credentials or neural
+weights are hosted. Champions Arena needs its separate Node controller and is
+not a format this static site can run.
+
+To update the workers again, use a fresh checkout and an existing committed bot:
+
+```powershell
+python assemble.py C:\path\to\PokemonShowdownOfflineBot --update-bot
+```
+
+This restores the previous corresponding source and overlays only committed
+AI/core/data/worker files plus dependency manifests, rebuilds the browser
+workers, then regenerates matching source/offline packs and version metadata.
+Use `python assemble.py --refresh` for later page edits in the same checkout.
+
+Pages now rebuilds the reviewed source update with `python3 apply-bot-update.py`
+before publishing. It verifies both worker fingerprints against the local
+browser-tested build. A failed build leaves the previous deployment live. The
+committed `dist` remains the prepared base assets; the deployed artifact and
+its source ZIP/offline packs are regenerated together. For a fresh local clone:
+
+```powershell
+python apply-bot-update.py C:\path\to\PokemonShowdownOfflineBot\node_modules
+node serve.mjs
+```
