@@ -94,17 +94,70 @@ def assemble(bot):
     finalize()
 
 
+def update_bot(bot):
+    """Refresh only the battle workers; retain the website's browser adapter/assets.
+
+    Read committed bot files, never private teams, credentials or training data.
+    The previous matching source ZIP restores the pinned client/build material.
+    """
+    bot = bot.resolve()
+    archive = OUT / 'downloads/OfflineShowdown-browser-source.zip'
+    if SNAPSHOT.exists():
+        raise RuntimeError('Use a fresh website checkout for --update-bot; existing snapshot is preserved')
+    SNAPSHOT.mkdir()
+    with zipfile.ZipFile(archive) as source:
+        for entry in source.infolist():
+            if entry.filename.startswith(('browser-edition/', 'models/')):
+                continue
+            dest = (SNAPSHOT / entry.filename).resolve()
+            if not dest.is_relative_to(SNAPSHOT.resolve()):
+                raise RuntimeError('Source archive escaped the snapshot')
+            if not entry.is_dir():
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(source.read(entry))
+    paths = ['src/ai', 'src/core', 'src/data', 'src/ai.worker.js',
+             'src/engine.worker.js', 'package.json', 'package-lock.json']
+    subprocess.run(['git', '-C', str(bot), 'diff', '--exit-code', 'HEAD', '--', *paths], check=True, stdout=subprocess.DEVNULL)
+    commit = subprocess.check_output(['git', '-C', str(bot), 'rev-parse', 'HEAD'], text=True).strip()
+    patch = ROOT / '.bot-update.zip'
+    subprocess.run(['git', '-C', str(bot), 'archive', '--format=zip', '--output=' + str(patch), 'HEAD', *paths], check=True)
+    try:
+        with zipfile.ZipFile(patch) as source:
+            for entry in source.infolist():
+                dest = (SNAPSHOT / entry.filename).resolve()
+                if not dest.is_relative_to(SNAPSHOT.resolve()):
+                    raise RuntimeError('Bot archive escaped the snapshot')
+                if not entry.is_dir():
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_bytes(source.read(entry))
+    finally:
+        patch.unlink()
+    metadata = {'sourceCommit':commit, 'updated':'2026-11-10',
+                'policy':'public-set response search for Very Strong RandBats',
+                'otherFormats':'unchanged stable singles/doubles controllers',
+                'browserAdapter':'preserved from previous browser edition',
+                'championsArena':'Node server controller; not hosted by static GitHub Pages'}
+    write_json(SNAPSHOT / 'BROWSER-BOT-UPDATE.json', metadata)
+    subprocess.run(['node', str(ROOT / 'build-browser.mjs'), str(SNAPSHOT), str(bot / 'node_modules'), str(OUT)], check=True, cwd=ROOT)
+    finalize()
+
+
 def finalize():
+    metadata_path = SNAPSHOT / 'BROWSER-BOT-UPDATE.json'
+    metadata = json.loads(metadata_path.read_text(encoding='utf-8')) if metadata_path.exists() else None
 
     # Deliver matching human-readable source, excluding undeployed neural weights.
     source_readme = '''Browser edition\n===============\nThis archive preserves the packaged September 2026 source release.\nChanges: static sprite preferences; silent battles; no Neural Preview menu item;\npersonal homepage; complete offline game download. Source uses AGPL-3.0.\n\nTo rebuild JS: install Node, run npm ci, then:\n  node browser-edition/build-browser.mjs . node_modules OUTPUT_DIRECTORY\nCopy the upstream prepared assets and use browser-edition/assemble.py with the\noriginal prepared bot directory to reproduce the whole static website. Prepared\nmedia is distributed in the site itself with separate artwork notices.\nThe server-backed Champions option and optional neural models are not deployed.\nFull website source and assembly script are in browser-edition/.\n'''
+    if metadata:
+        source_readme = source_readme.replace('This archive preserves the packaged September 2026 source release.',
+            'The browser adapter and pinned client are preserved from the packaged release.\nBattle-worker sources were updated from bot commit ' + metadata['sourceCommit'] + '.\nSee BROWSER-BOT-UPDATE.json. No Arena token, team or learned weights are included.')
     (SNAPSHOT / 'BROWSER-EDITION.txt').write_text(source_readme,encoding='utf-8')
     source_out = OUT / 'downloads/OfflineShowdown-browser-source.zip'
     source_out.parent.mkdir(exist_ok=True)
     with zipfile.ZipFile(source_out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
         for p in sorted(SNAPSHOT.rglob('*')):
-            if p.is_file(): z.write(p,p.relative_to(SNAPSHOT).as_posix())
-        for p in [ROOT / 'assemble.py', ROOT / 'build-browser.mjs', ROOT / 'README.md', ROOT / 'verify-practice.mjs', *(p for p in (ROOT / 'web').rglob('*') if p.is_file())]:
+            if p.is_file() and 'node_modules' not in p.relative_to(SNAPSHOT).parts: z.write(p,p.relative_to(SNAPSHOT).as_posix())
+        for p in [ROOT / 'assemble.py', ROOT / 'apply-bot-update.py', ROOT / 'build-browser.mjs', ROOT / 'README.md', ROOT / 'verify-practice.mjs', *(p for p in (ROOT / 'web').rglob('*') if p.is_file())]:
             z.write(p,'browser-edition/' + p.relative_to(ROOT).as_posix())
     if source_out.stat().st_size > 25*1024*1024:
         raise RuntimeError('Source archive exceeds the hosting asset size limit')
@@ -137,14 +190,17 @@ def finalize():
     write_json(OUT / 'offline-manifest.json', {'version':version,'totalBytes':sum(p['bytes'] for p in packs),'packs':packs,'files':index})
     worker = (ROOT / 'web/sw-template.js').read_text(encoding='utf-8').replace('__VERSION__',version)
     (OUT / 'sw.js').write_text(worker,encoding='utf-8')
-    write_json(OUT / 'browser-build-info.json', {'source':'Existing packaged September 2026 source release','formats':['gen9ou','gen9randombattle','gen9randomdoublesbattle'],'version':version,'staticSprites':True,'sound':False,'neuralModels':False,'sourceArchiveBytes':source_out.stat().st_size,'offlineBytes':sum(p['bytes'] for p in packs),'offlineFiles':len(index)})
+    write_json(OUT / 'browser-build-info.json', {'source':'November 2026 RandBats worker update' if metadata else 'Existing packaged September 2026 source release','botUpdate':metadata,'formats':['gen9ou','gen9randombattle','gen9randomdoublesbattle'],'version':version,'staticSprites':True,'sound':False,'neuralModels':False,'sourceArchiveBytes':source_out.stat().st_size,'offlineBytes':sum(p['bytes'] for p in packs),'offlineFiles':len(index)})
     print(json.dumps({'version':version,'offlineMiB':round(sum(p['bytes'] for p in packs)/1048576,1),'files':len(index),'packs':len(packs),'sourceMiB':round(source_out.stat().st_size/1048576,1)}))
 
 
 if __name__ == '__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('bot',type=Path,nargs='?');parser.add_argument('--refresh',action='store_true')
+    parser=argparse.ArgumentParser();parser.add_argument('bot',type=Path,nargs='?');parser.add_argument('--refresh',action='store_true');parser.add_argument('--update-bot',action='store_true')
     args=parser.parse_args()
-    if args.refresh:
+    if args.update_bot:
+        if not args.bot or args.refresh: parser.error('--update-bot requires the existing bot directory, without --refresh')
+        update_bot(args.bot)
+    elif args.refresh:
         for p in (ROOT / 'web').iterdir():
             if p.name != 'sw-template.js':
                 if p.is_dir(): shutil.copytree(p,OUT / p.name,dirs_exist_ok=True)

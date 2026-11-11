@@ -1,0 +1,16 @@
+{
+  "archive": "bot-updates/fbe416b.zip",
+  "sha256": "e889bdbaa223f4af3ecd58c18f8c0b178a838c43f1c3fdf34d6da8ce43930f20",
+  "botUpdate": {
+    "sourceCommit": "fbe416bf461ba4cd04880ee33826b90ff640b690",
+    "updated": "2026-11-10",
+    "policy": "public-set response search for Very Strong RandBats",
+    "otherFormats": "unchanged stable singles/doubles controllers",
+    "browserAdapter": "preserved from previous browser edition",
+    "championsArena": "Node server controller; not hosted by static GitHub Pages"
+  },
+  "expectedWorkers": {
+    "ai.worker.js": "918991edfb4a877f3fc5e11b90b22e9c827a196187479d2f3775a5838bc266e7",
+    "engine.worker.js": "2d607ee54d431783c075b75aac71c8deedf1844e1f5cd068bcf0ac4ed15cd88b"
+  }
+}
