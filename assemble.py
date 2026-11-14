@@ -150,14 +150,14 @@ def finalize():
     source_readme = '''Browser edition\n===============\nThis archive preserves the packaged September 2026 source release.\nChanges: static sprite preferences; silent battles; no Neural Preview menu item;\npersonal homepage; complete offline game download. Source uses AGPL-3.0.\n\nTo rebuild JS: install Node, run npm ci, then:\n  node browser-edition/build-browser.mjs . node_modules OUTPUT_DIRECTORY\nCopy the upstream prepared assets and use browser-edition/assemble.py with the\noriginal prepared bot directory to reproduce the whole static website. Prepared\nmedia is distributed in the site itself with separate artwork notices.\nThe server-backed Champions option and optional neural models are not deployed.\nFull website source and assembly script are in browser-edition/.\n'''
     if metadata:
         source_readme = source_readme.replace('This archive preserves the packaged September 2026 source release.',
-            'The browser adapter and pinned client are preserved from the packaged release.\nBattle-worker sources were updated from bot commit ' + metadata['sourceCommit'] + '.\nSee BROWSER-BOT-UPDATE.json. No Arena token, team or learned weights are included.')
+            'The browser adapter and pinned client are preserved from the packaged release.\nBattle-worker sources were updated from bot commit ' + metadata['sourceCommit'] + '.\nSee BROWSER-BOT-UPDATE.json. No Arena token, team or learned weights are included.\nChampions VGC: src/champions-browser + scripts/lib, built with scripts/build-champions-browser.mjs\nagainst the pinned Pokemon Showdown simulator (MIT; commit in scripts/lib/champions-reconstruction.mjs of the bot repo).')
     (SNAPSHOT / 'BROWSER-EDITION.txt').write_text(source_readme,encoding='utf-8')
     source_out = OUT / 'downloads/OfflineShowdown-browser-source.zip'
     source_out.parent.mkdir(exist_ok=True)
     with zipfile.ZipFile(source_out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
         for p in sorted(SNAPSHOT.rglob('*')):
             if p.is_file() and 'node_modules' not in p.relative_to(SNAPSHOT).parts: z.write(p,p.relative_to(SNAPSHOT).as_posix())
-        for p in [ROOT / 'assemble.py', ROOT / 'apply-bot-update.py', ROOT / 'build-browser.mjs', ROOT / 'README.md', ROOT / 'verify-practice.mjs', ROOT / 'verify-offline.mjs', *(p for p in (ROOT / 'web').rglob('*') if p.is_file())]:
+        for p in [ROOT / 'assemble.py', ROOT / 'apply-bot-update.py', ROOT / 'build-browser.mjs', ROOT / 'README.md', ROOT / 'verify-practice.mjs', ROOT / 'verify-offline.mjs', *(p for p in (ROOT / 'web').rglob('*') if p.is_file() and p.name != 'champions.worker.js')]:
             z.write(p,'browser-edition/' + p.relative_to(ROOT).as_posix())
     if source_out.stat().st_size > 25*1024*1024:
         raise RuntimeError('Source archive exceeds the hosting asset size limit')
@@ -190,7 +190,7 @@ def finalize():
     write_json(OUT / 'offline-manifest.json', {'version':version,'totalBytes':sum(p['bytes'] for p in packs),'packs':packs,'files':index})
     worker = (ROOT / 'web/sw-template.js').read_text(encoding='utf-8').replace('__VERSION__',version)
     (OUT / 'sw.js').write_text(worker,encoding='utf-8')
-    write_json(OUT / 'browser-build-info.json', {'source':'November 2026 RandBats worker update' if metadata else 'Existing packaged September 2026 source release','botUpdate':metadata,'formats':['gen9ou','gen9randombattle','gen9randomdoublesbattle'],'version':version,'staticSprites':True,'sound':False,'neuralModels':False,'sourceArchiveBytes':source_out.stat().st_size,'offlineBytes':sum(p['bytes'] for p in packs),'offlineFiles':len(index)})
+    write_json(OUT / 'browser-build-info.json', {'source':'November 2026 RandBats worker update' if metadata else 'Existing packaged September 2026 source release','botUpdate':metadata,'formats':['gen9championsvgc2026regmc','gen9ou','gen9randombattle','gen9randomdoublesbattle'],'version':version,'staticSprites':True,'sound':False,'neuralModels':False,'sourceArchiveBytes':source_out.stat().st_size,'offlineBytes':sum(p['bytes'] for p in packs),'offlineFiles':len(index)})
     print(json.dumps({'version':version,'offlineMiB':round(sum(p['bytes'] for p in packs)/1048576,1),'files':len(index),'packs':len(packs),'sourceMiB':round(source_out.stat().st_size/1048576,1)}))
 
 

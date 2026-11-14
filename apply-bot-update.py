@@ -20,8 +20,10 @@ def extract(archive, overlay=False):
             name = entry.filename
             if entry.is_dir() or name.startswith(('browser-edition/', 'models/')):
                 continue
-            if overlay and not (name.startswith(('src/ai/', 'src/core/', 'src/data/')) or name in
-                                {'src/ai.worker.js', 'src/engine.worker.js', 'package.json', 'package-lock.json'}):
+            if overlay and not (name.startswith(('src/ai/', 'src/core/', 'src/data/', 'src/champions-browser/', 'scripts/lib/')) or name in
+                                {'src/ai.worker.js', 'src/engine.worker.js', 'src/showdown-main.js', 'src/transport/battle-assets.js',
+                                 'scripts/build-champions-browser.mjs',
+                                 'package.json', 'package-lock.json'}):
                 raise RuntimeError('Unexpected bot-source path: ' + name)
             dest = (SNAPSHOT / name).resolve()
             if not dest.is_relative_to(SNAPSHOT.resolve()):
@@ -58,6 +60,11 @@ def main():
             shutil.copytree(entry, OUT / entry.name, dirs_exist_ok=True)
         else:
             shutil.copyfile(entry, OUT / entry.name)
+    # The Champions worker is prebuilt from the pinned simulator (not available in CI);
+    # its source and build script are in the overlay archive and the source download.
+    champions = manifest.get('championsWorker')
+    if champions and hashlib.sha256((OUT / 'champions.worker.js').read_bytes()).hexdigest() != champions['sha256']:
+        raise RuntimeError('Champions worker differs from the reviewed browser test')
     finalize()
 
 

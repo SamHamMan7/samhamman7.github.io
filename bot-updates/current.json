@@ -1,16 +1,21 @@
 {
-  "archive": "bot-updates/fbe416b.zip",
-  "sha256": "e889bdbaa223f4af3ecd58c18f8c0b178a838c43f1c3fdf34d6da8ce43930f20",
+  "archive": "bot-updates/c7a23a7.zip",
+  "sha256": "58c3df121a57c05a0ab24cb2067f96736a88dd9234e3a909fd71e8928783666b",
   "botUpdate": {
-    "sourceCommit": "fbe416bf461ba4cd04880ee33826b90ff640b690",
-    "updated": "2026-11-10",
+    "sourceCommit": "c7a23a7",
+    "updated": "2026-11-12",
     "policy": "public-set response search for Very Strong RandBats",
     "otherFormats": "unchanged stable singles/doubles controllers",
     "browserAdapter": "preserved from previous browser edition",
-    "championsArena": "Node server controller; not hosted by static GitHub Pages"
+    "championsArena": "Champions VGC runs in a browser worker using the stable Discharge search (native-reply-control) for Very Strong"
   },
   "expectedWorkers": {
     "ai.worker.js": "918991edfb4a877f3fc5e11b90b22e9c827a196187479d2f3775a5838bc266e7",
     "engine.worker.js": "2d607ee54d431783c075b75aac71c8deedf1844e1f5cd068bcf0ac4ed15cd88b"
+  },
+  "championsWorker": {
+    "file": "web/champions.worker.js",
+    "sha256": "31020b5728d8439627e895fb603f89354062df7bd778b32d4f40a555dda69178",
+    "builtFrom": "bot commit c7a23a7, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }
