@@ -1,78 +1,137 @@
-// Profiles: each person using this browser gets their own apps, tasks, notes, timer and colour.
-// Nothing is sent anywhere; a profile lives in this browser and can be moved with Export / Import.
+// Accounts: the site opens on an intro where you sign in or create an account. Each account has
+// its own apps, tasks, notes, timer, grades and colour. There is no server: an account lives in
+// this browser (move it with Export / Import), and a passphrase is a lock on this device, not
+// encryption. Sam's account is built in and carries the class calendar and school links.
 window.Profile = (() => {
   const read = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
   const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
   const OWN = ['dash-links-2', 'dash-tasks', 'dash-tasks-v', 'dash-notes', 'dash-timer', 'dash-focus-tally', 'dash-grades', 'dash-grades-at', 'hac-user'];
   const ACCENTS = { amber: 'Amber', coral: 'Coral', mint: 'Mint', sky: 'Sky', violet: 'Violet' };
+  // Set to {salt, hash} to make Sam's passphrase the same on every device (see profile dialog).
+  const OWNER_LOCK = null;
+  const STARTER_APPS = [['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Gmail', 'https://mail.google.com/'], ['Google Drive', 'https://drive.google.com/'], ['Classroom', 'https://classroom.google.com/'], ['YouTube', 'https://www.youtube.com/'], ['Desmos', 'https://www.desmos.com/calculator'], ['Khan Academy', 'https://www.khanacademy.org/'], ['Quizlet', 'https://quizlet.com/'], ['AMC Trivial', 'https://amctrivial.com/'], ['USNCO quizzes', 'https://usnco-quizzes.web.app/'], ['Showdown', 'https://play.pokemonshowdown.com/'], ['GitHub', 'https://github.com/'], ['Aniko', 'https://www.aniko.ai/']];
   let list = read('profiles', null);
   if (!Array.isArray(list) || !list.length) list = [{ id: '', name: 'Sam', accent: 'amber', classes: true }];
+  if (!list.some(p => p.id === '')) list.unshift({ id: '', name: 'Sam', accent: 'amber', classes: true });
   let me = list.find(p => p.id === read('profile-active', '')) || list[0];
   const prefix = p => p.id ? `p:${p.id}:` : '';
-  // Passphrase: a screen lock for this profile. Until it is entered (once per browser session)
-  // nothing of the profile is read or shown. It is not encryption: the data stays in this browser.
-  let unlocked = true; try { unlocked = !me.lock || sessionStorage.getItem('unlocked:' + me.id) === me.lock.hash; } catch {}
-  const key = k => (unlocked ? prefix(me) : 'locked:') + k;
+  const lockOf = p => (p.id === '' && OWNER_LOCK) || p.lock || null;
+  const token = p => 'signed-in:' + p.id;
+  const session = { get: k => { try { return sessionStorage.getItem(k) ?? localStorage.getItem(k); } catch { return null; } }, set: (k, v, keep) => { try { sessionStorage.setItem(k, v); keep ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} }, drop: k => { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch {} }, kept: k => { try { return localStorage.getItem(k) !== null; } catch { return false; } } };
+  const proof = p => lockOf(p) ? lockOf(p).hash : 'yes';
+  // Signed in means this browser holds the account's proof. Until then nothing of it is read or shown.
+  const signedIn = session.get(token(me)) === proof(me);
+  const key = k => (signedIn ? prefix(me) : 'locked:') + k;
   const digest = async (pass, salt) => { const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveBits']); const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations: 150000 }, k, 256); return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join(''); };
+  const makeLock = async pass => { const salt = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join(''); return { salt, hash: await digest(pass, salt) }; };
   const persist = () => write('profiles', list);
-  const go = id => { write('profile-active', id); location.reload(); };
-  document.documentElement.dataset.accent = ACCENTS[me.accent] ? me.accent : 'amber';
-  if (!me.classes) document.documentElement.classList.add('no-classes');
+  const enter = (p, keep) => { session.set(token(p), proof(p), keep); write('profile-active', p.id); location.reload(); };
+  const signOut = () => { session.drop(token(me)); location.reload(); };
+  document.documentElement.dataset.accent = signedIn && ACCENTS[me.accent] ? me.accent : 'amber';
+  if (signedIn && !me.classes) document.documentElement.classList.add('no-classes');
 
   const el = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; return x; };
-  if (!unlocked) {
-    document.documentElement.classList.add('locked');
-    const gate = el('form', 'lock'), box = el('div', 'lock-box'), pass = el('input'), ok = el('button', 'primary', 'Unlock'), msg = el('p', 'small lock-msg');
-    pass.type = 'password'; pass.placeholder = 'Passphrase'; pass.autocomplete = 'current-password'; pass.setAttribute('aria-label', `Passphrase for ${me.name}`); ok.type = 'submit'; msg.setAttribute('role', 'status');
-    const who = el('span', 'avatar avatar-' + (ACCENTS[me.accent] ? me.accent : 'amber'), (me.name.trim()[0] || '?').toUpperCase());
-    box.append(who, el('h2', '', me.name), el('p', 'muted', 'This profile is locked.'), pass, ok, msg);
-    const others = list.filter(p => p !== me);
-    if (others.length) { const row = el('p', 'small lock-others'); row.append('Not you? '); for (const p of others) { const b = el('button', 'linkish', p.name); b.type = 'button'; b.addEventListener('click', () => go(p.id)); row.append(b, ' '); } box.append(row); }
-    gate.append(box); document.body.append(gate); pass.focus();
-    gate.addEventListener('submit', async e => { e.preventDefault(); ok.disabled = true; let h = ''; try { h = await digest(pass.value, me.lock.salt); } catch {} if (h === me.lock.hash) { try { sessionStorage.setItem('unlocked:' + me.id, h); } catch {} location.reload(); } else { ok.disabled = false; msg.textContent = 'That passphrase doesn’t match.'; pass.select(); } });
+  const avatar = p => el('span', 'avatar avatar-' + (ACCENTS[p.accent] ? p.accent : 'amber'), (p.name.trim()[0] || '?').toUpperCase());
+  const field = (type, placeholder, label, auto) => { const i = el('input'); i.type = type; i.placeholder = placeholder; i.setAttribute('aria-label', label); if (auto) i.autocomplete = auto; return i; };
+
+  // ---- intro: what the site is, then sign in or create an account ----
+  function intro() {
+    const icon = n => window.SiteIcons ? window.SiteIcons.svg(n) : '';
+    const root = el('div', 'intro'), pitch = el('div', 'intro-pitch'), card = el('div', 'intro-card');
+    pitch.append(el('p', 'intro-brand', 'my site'), el('h1', '', 'Battle a Pokémon bot, practice for contests, and run your day from one page.'));
+    const points = el('ul', 'intro-points');
+    for (const [i, title, text] of [['gamepad', 'Pokémon Showdown bot', 'Champions VGC doubles and more, with a rating that follows you.'], ['flask', 'Practice', 'Live problems from USNCO quizzes and AMC Trivial.'], ['check', 'Your own dashboard', 'Apps, tasks, a focus timer, grades and notes, in your colour.'], ['calendar', 'Calendar', 'A month view with your tasks on it.']]) { const li = el('li'), b = el('span', 'intro-icon'); b.innerHTML = icon(i); const t = el('span'); t.append(el('strong', '', title), el('span', '', text)); li.append(b, t); points.append(li); }
+    pitch.append(points);
+    const tabs = el('div', 'seg intro-tabs'), inTab = el('button', '', 'Sign in'), newTab = el('button', '', 'Create account'), body = el('div', 'intro-body');
+    inTab.type = newTab.type = 'button'; tabs.append(inTab, newTab); card.append(tabs, body);
+    const keepRow = checked => { const l = el('label', 'profile-check'), c = el('input'); c.type = 'checkbox'; c.checked = checked; l.append(c, 'Keep me signed in on this device'); return [l, c]; };
+
+    function showSignIn(chosen = me) {
+      inTab.setAttribute('aria-pressed', 'true'); newTab.setAttribute('aria-pressed', 'false'); body.replaceChildren();
+      const people = el('div', 'people');
+      for (const p of list) { const b = el('button', 'person' + (p === chosen ? ' is-me' : '')); b.type = 'button'; b.append(avatar(p), el('span', '', p.name)); b.addEventListener('click', () => showSignIn(p)); people.append(b); }
+      const form = el('form', 'intro-form'), pass = field('password', 'Passphrase', `Passphrase for ${chosen.name}`, 'current-password'), ok = el('button', 'primary', `Sign in as ${chosen.name}`), msg = el('p', 'small lock-msg'), [keepLabel, keep] = keepRow(true);
+      ok.type = 'submit'; msg.setAttribute('role', 'status'); pass.hidden = !lockOf(chosen); pass.required = !!lockOf(chosen);
+      form.append(pass, keepLabel, ok, msg); body.append(el('p', 'intro-label', 'Accounts on this device'), people, form);
+      if (lockOf(chosen)) pass.focus();
+      form.addEventListener('submit', async e => {
+        e.preventDefault(); const lock = lockOf(chosen); if (!lock) return enter(chosen, keep.checked);
+        ok.disabled = true; let h = ''; try { h = await digest(pass.value, lock.salt); } catch {}
+        if (h === lock.hash) enter(chosen, keep.checked); else { ok.disabled = false; msg.textContent = 'That passphrase doesn’t match.'; pass.select(); }
+      });
+    }
+    function showCreate() {
+      inTab.setAttribute('aria-pressed', 'false'); newTab.setAttribute('aria-pressed', 'true'); body.replaceChildren();
+      const form = el('form', 'intro-form'), name = field('text', 'Your name', 'Your name', 'nickname'), pass = field('password', 'Passphrase (optional)', 'Passphrase, optional', 'new-password'), ok = el('button', 'primary', 'Create my account'), msg = el('p', 'small lock-msg'), [keepLabel, keep] = keepRow(true);
+      name.maxLength = 20; name.required = true; ok.type = 'submit';
+      let accent = Object.keys(ACCENTS)[list.length % 5];
+      const colours = el('div', 'swatches'); colours.setAttribute('role', 'group'); colours.setAttribute('aria-label', 'Colour');
+      const paint = () => { for (const s of colours.children) s.setAttribute('aria-pressed', String(s.dataset.id === accent)); };
+      for (const [id, label] of Object.entries(ACCENTS)) { const s = el('button', 'swatch avatar-' + id); s.type = 'button'; s.dataset.id = id; s.title = label; s.setAttribute('aria-label', label); s.addEventListener('click', () => { accent = id; paint(); }); colours.append(s); }
+      paint();
+      const apps = el('div', 'intro-apps'); apps.setAttribute('role', 'group'); apps.setAttribute('aria-label', 'Starter apps');
+      for (const [i, [n]] of STARTER_APPS.entries()) { const b = el('button', 'pill', n); b.type = 'button'; b.setAttribute('aria-pressed', String(i < 2 || [6, 9, 11].includes(i))); b.addEventListener('click', () => b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'))); apps.append(b); }
+      form.append(name, pass, el('p', 'intro-label', 'Colour'), colours, el('p', 'intro-label', 'Apps to start with (you can change these later)'), apps, keepLabel, ok, msg);
+      body.append(form); name.focus();
+      form.addEventListener('submit', async e => {
+        e.preventDefault(); const n = name.value.trim(); if (!n) return;
+        if (list.some(p => p.name.toLowerCase() === n.toLowerCase())) { msg.textContent = 'That name is already an account on this device.'; return; }
+        if (pass.value && pass.value.length < 4) { msg.textContent = 'Use at least 4 characters for a passphrase, or leave it empty.'; return; }
+        const p = { id: Date.now().toString(36), name: n, accent, classes: false }; ok.disabled = true;
+        if (pass.value) { try { p.lock = await makeLock(pass.value); } catch { ok.disabled = false; msg.textContent = 'This browser can’t set a passphrase here. Leave it empty.'; return; } }
+        const picked = STARTER_APPS.filter((_, i) => apps.children[i].getAttribute('aria-pressed') === 'true');
+        if (picked.length) write(prefix(p) + 'dash-links-2', picked);
+        list.push(p); persist(); enter(p, keep.checked);
+      });
+    }
+    inTab.addEventListener('click', () => showSignIn()); newTab.addEventListener('click', showCreate);
+    card.append(el('p', 'small muted intro-note', 'Accounts are saved in this browser only. Nothing is sent to a server.'));
+    root.append(pitch, card); document.body.append(root); showSignIn();
   }
+  if (!signedIn) {
+    document.documentElement.classList.add('locked');
+    // Deferred scripts run before DOMContentLoaded; wait for it so the icon set has loaded.
+    if (document.readyState === 'complete') intro(); else document.addEventListener('DOMContentLoaded', intro);
+  }
+
+  // ---- account menu: customize, move, sign out ----
   const chip = document.getElementById('profile-chip'), dialog = document.getElementById('profile-dialog');
-  if (chip && dialog && unlocked) {
-    const avatar = p => el('span', 'avatar avatar-' + (ACCENTS[p.accent] ? p.accent : 'amber'), (p.name.trim()[0] || '?').toUpperCase());
+  if (chip && dialog && signedIn) {
     chip.append(avatar(me), el('span', 'profile-name', me.name));
-    chip.setAttribute('aria-label', `Profile: ${me.name}. Switch or customize`);
+    chip.setAttribute('aria-label', `Account: ${me.name}. Customize or sign out`);
     const body = el('div', 'profile-body'); dialog.append(body);
     const draw = () => {
       body.replaceChildren();
-      const head = el('div', 'profile-head'); head.append(el('h2', '', 'Who’s using this?')); const close = el('button', 'task-x', '×'); close.type = 'button'; close.setAttribute('aria-label', 'Close'); close.addEventListener('click', () => dialog.close()); head.append(close); body.append(head);
-      const people = el('div', 'people');
-      for (const p of list) { const b = el('button', 'person' + (p === me ? ' is-me' : '')); b.type = 'button'; b.append(avatar(p), el('span', '', p.name)); if (p !== me) b.addEventListener('click', () => go(p.id)); else b.setAttribute('aria-current', 'true'); people.append(b); }
-      body.append(people);
-      const add = el('form', 'profile-new'), name = el('input'), ok = el('button', 'primary', 'Add profile'); name.type = 'text'; name.placeholder = 'New profile name'; name.maxLength = 20; name.required = true; name.setAttribute('aria-label', 'New profile name'); ok.type = 'submit'; add.append(name, ok);
-      add.addEventListener('submit', e => { e.preventDefault(); const n = name.value.trim(); if (!n) return; const id = Date.now().toString(36); list.push({ id, name: n, accent: Object.keys(ACCENTS)[list.length % 5], classes: false }); persist(); go(id); });
-      body.append(add);
+      const head = el('div', 'profile-head'), who = el('div', 'profile-who'); who.append(avatar(me), el('h2', '', me.name)); const close = el('button', 'task-x', '×'); close.type = 'button'; close.setAttribute('aria-label', 'Close'); close.addEventListener('click', () => dialog.close()); head.append(who, close); body.append(head);
+      const out = el('button', '', 'Sign out / switch account'); out.type = 'button'; out.className = 'profile-out'; out.addEventListener('click', signOut); body.append(out);
 
-      body.append(el('h3', 'eyebrow', `Customize ${me.name}`));
+      body.append(el('h3', 'eyebrow', 'Customize'));
       const nameRow = el('label', 'profile-field'), nm = el('input'); nm.type = 'text'; nm.value = me.name; nm.maxLength = 20; nameRow.append('Name', nm); nm.addEventListener('change', () => { if (nm.value.trim()) { me.name = nm.value.trim(); persist(); } });
       const colours = el('div', 'swatches'); colours.setAttribute('role', 'group'); colours.setAttribute('aria-label', 'Colour');
       for (const [id, label] of Object.entries(ACCENTS)) { const s = el('button', 'swatch avatar-' + id); s.type = 'button'; s.title = label; s.setAttribute('aria-label', label); s.setAttribute('aria-pressed', String(me.accent === id)); s.addEventListener('click', () => { me.accent = id; persist(); document.documentElement.dataset.accent = id; draw(); }); colours.append(s); }
       const cls = el('label', 'profile-check'), box = el('input'); box.type = 'checkbox'; box.checked = !!me.classes; cls.append(box, 'Show Sam’s class calendar on Home (week, tests, countdowns)'); box.addEventListener('change', () => { me.classes = box.checked; persist(); });
-      const lockRow = el('div', 'profile-lock'), lp = el('input'), lb = el('button', '', me.lock ? 'Change' : 'Set passphrase'), lr = el('button', 'linkish', 'Remove'), ln = el('p', 'small muted', me.lock ? 'This profile asks for its passphrase when the browser is reopened.' : 'Optional. Keeps other people on this device out of this profile. There is no reset if you forget it.');
-      lp.type = 'password'; lp.placeholder = me.lock ? 'New passphrase' : 'Passphrase'; lp.autocomplete = 'new-password'; lp.setAttribute('aria-label', 'Passphrase'); lb.type = lr.type = 'button'; lr.hidden = !me.lock;
-      lb.addEventListener('click', async () => { if (lp.value.length < 4) { ln.textContent = 'Use at least 4 characters.'; return; } const salt = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join(''); try { const hash = await digest(lp.value, salt); me.lock = { salt, hash }; persist(); sessionStorage.setItem('unlocked:' + me.id, hash); draw(); } catch { ln.textContent = 'This browser can’t set a passphrase here.'; } });
-      lr.addEventListener('click', () => { delete me.lock; persist(); draw(); });
+      const fixed = me.id === '' && OWNER_LOCK, has = !!lockOf(me);
+      const lockRow = el('div', 'profile-lock'), lp = field('password', has ? 'New passphrase' : 'Passphrase', 'Passphrase', 'new-password'), lb = el('button', '', has ? 'Change' : 'Set passphrase'), lr = el('button', 'linkish', 'Remove'), ln = el('p', 'small muted', fixed ? 'This account’s passphrase is built into the site and is the same on every device.' : has ? 'Signing in to this account asks for its passphrase.' : 'Optional. Signing in will ask for it. There is no reset if you forget it.');
+      lb.type = lr.type = 'button'; lr.hidden = !me.lock || !!fixed; lockRow.hidden = !!fixed;
+      lb.addEventListener('click', async () => { if (lp.value.length < 4) { ln.textContent = 'Use at least 4 characters.'; return; } try { const keep = session.kept(token(me)); me.lock = await makeLock(lp.value); persist(); session.set(token(me), me.lock.hash, keep); draw(); } catch { ln.textContent = 'This browser can’t set a passphrase here.'; } });
+      lr.addEventListener('click', () => { const keep = session.kept(token(me)); delete me.lock; persist(); session.set(token(me), 'yes', keep); draw(); });
       lockRow.append(lp, lb, lr);
       const done = el('button', 'primary', 'Save and reload'); done.type = 'button'; done.addEventListener('click', () => location.reload());
       body.append(nameRow, colours, cls, lockRow, ln, done);
 
       body.append(el('h3', 'eyebrow', 'Move or remove'));
-      const tools = el('div', 'profile-tools'), exp = el('button', '', 'Export'), imp = el('button', '', 'Import'), file = el('input'), del = el('button', 'linkish', 'Delete this profile');
+      const tools = el('div', 'profile-tools'), exp = el('button', '', 'Export'), imp = el('button', '', 'Import'), file = el('input'), del = el('button', 'linkish', 'Delete this account');
       exp.type = imp.type = del.type = 'button'; file.type = 'file'; file.accept = 'application/json,.json'; file.hidden = true;
-      exp.addEventListener('click', () => { const data = { kind: 'my-site-profile', profile: { name: me.name, accent: me.accent, classes: !!me.classes }, data: Object.fromEntries(OWN.map(k => [k, read(key(k), null)]).filter(([, v]) => v !== null)) }; const a = el('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' })); a.download = `my-site-${me.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'profile'}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
+      exp.addEventListener('click', () => { const data = { kind: 'my-site-profile', profile: { name: me.name, accent: me.accent, classes: !!me.classes }, data: Object.fromEntries(OWN.map(k => [k, read(key(k), null)]).filter(([, v]) => v !== null)) }; const a = el('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' })); a.download = `my-site-${me.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'account'}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
       imp.addEventListener('click', () => file.click());
-      file.addEventListener('change', async () => { try { const d = JSON.parse(await file.files[0].text()); if (d.kind !== 'my-site-profile' || !d.profile || typeof d.data !== 'object') throw 0; const id = Date.now().toString(36), p = { id, name: String(d.profile.name || 'Imported').slice(0, 20), accent: ACCENTS[d.profile.accent] ? d.profile.accent : 'amber', classes: !!d.profile.classes }; list.push(p); for (const k of OWN) if (d.data[k] !== undefined) write(prefix(p) + k, d.data[k]); persist(); go(id); } catch { note.textContent = 'That file isn’t a profile exported from this site.'; } });
-      del.hidden = list.length < 2 || me.id === '';
-      del.addEventListener('click', () => { if (del.dataset.sure !== '1') { del.dataset.sure = '1'; del.textContent = 'Really delete? Click again'; return; } for (const k of OWN) try { localStorage.removeItem(key(k)); } catch {} list = list.filter(p => p !== me); persist(); go(list[0].id); });
-      const note = el('p', 'small muted', 'Profiles are saved in this browser only, with no password. Export makes a file you can import on another device.');
+      file.addEventListener('change', async () => { try { const d = JSON.parse(await file.files[0].text()); if (d.kind !== 'my-site-profile' || !d.profile || typeof d.data !== 'object') throw 0; const p = { id: Date.now().toString(36), name: String(d.profile.name || 'Imported').slice(0, 20), accent: ACCENTS[d.profile.accent] ? d.profile.accent : 'amber', classes: !!d.profile.classes }; list.push(p); for (const k of OWN) if (d.data[k] !== undefined) write(prefix(p) + k, d.data[k]); persist(); enter(p, session.kept(token(me))); } catch { note.textContent = 'That file isn’t an account exported from this site.'; } });
+      del.hidden = me.id === '';
+      del.addEventListener('click', () => { if (del.dataset.sure !== '1') { del.dataset.sure = '1'; del.textContent = 'Really delete? Click again'; return; } for (const k of OWN) try { localStorage.removeItem(key(k)); } catch {} session.drop(token(me)); list = list.filter(p => p !== me); persist(); write('profile-active', ''); location.reload(); });
+      const note = el('p', 'small muted', 'Accounts are saved in this browser only. Export makes a file you can import on another device.');
       tools.append(exp, imp, file, del); body.append(tools, note);
     };
     chip.addEventListener('click', () => { draw(); dialog.showModal(); });
     dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
   }
-  return { me, key, isOwner: me.id === '', locked: !unlocked };
+  return { me, key, isOwner: me.id === '', locked: !signedIn };
 })();

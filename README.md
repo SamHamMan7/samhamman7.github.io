@@ -77,3 +77,5 @@ node serve.mjs
 ```
 
 Games tab: "My teams" lists the teams saved in the Showdown teambuilder (same browser storage), adds teams from pasted export text, and backs them up to a file.
+
+The site opens on an intro where you sign in or create an account. Accounts live in the browser only (no server); Sam's account is built in and carries the class calendar and school links.
