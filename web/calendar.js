@@ -1,73 +1,136 @@
-// Combined class calendar: one school week at a time, filterable by class.
+// Combined class calendar: a month grid (or one detailed week), filterable by class,
+// with the selected day's full detail beside it. Tasks with a due date show up too.
 (() => {
   const data = window.SCHOOL_CALENDAR, root = document.getElementById('calendar');
   if (!data || !root) return;
-  const DAY = 86400000, names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; return x; };
+  const WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const key = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
-  const monday = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const w = x.getDay(); x.setDate(x.getDate() + (w === 0 ? 1 : w === 6 ? 2 : 1 - w)); return x; };
-  const add = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-  const dates = Object.keys(data.days).sort(), first = monday(parse(dates[0])), last = monday(parse(dates[dates.length - 1]));
-  const today = new Date(), todayKey = key(today);
-  const clamp = d => d < first ? first : d > last ? last : d;
+  const add = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; };
+  const monday = d => add(d, -((d.getDay() + 6) % 7));
+  const dates = Object.keys(data.days).sort(), firstDay = parse(dates[0]), lastDay = parse(dates[dates.length - 1]);
+  const todayKey = key(new Date());
   const important = /\b(tests?|quiz(zes)?|exams?|due|essays?|dbq|timed|final|presentations?|psat|sat day|act day)\b/i;
   const off = /holiday|no school|break\b/i;
   const slug = c => c.toLowerCase().replace(/[^a-z]+/g, '-');
-  const month = d => d.toLocaleDateString(undefined, { month: 'short' });
-  let week = clamp(monday(today));
-  let hidden = new Set();
-  try { hidden = new Set(JSON.parse(localStorage.getItem('calendar-hidden') || '[]')); } catch {}
-  const el = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; return x; };
+  const short = d => d.toLocaleDateString(undefined, { month: 'short' });
+  const clampDay = d => d < firstDay ? firstDay : d > lastDay ? lastDay : d;
+  const read = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; } };
+  const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-  const title = document.getElementById('calendar-week'), grid = document.getElementById('calendar-grid'), filters = document.getElementById('calendar-filters'), upcoming = document.getElementById('calendar-upcoming');
-  const prev = document.getElementById('calendar-prev'), next = document.getElementById('calendar-next'), now = document.getElementById('calendar-today');
+  let hidden = new Set(read('calendar-hidden', []));
+  let view = read('calendar-view', 'month') === 'week' ? 'week' : 'month';
+  let selected = clampDay(new Date());
+  let cursor = new Date(selected.getFullYear(), selected.getMonth(), 1);
+  const tasksByDay = () => { const map = {}; for (const t of read('dash-tasks', []) || []) if (t && t.due && !t.done) (map[t.due] ||= []).push(t.text); return map; };
+
+  const title = $('calendar-title'), grid = $('calendar-grid'), filters = $('calendar-filters'), upcoming = $('calendar-upcoming');
+  const prev = $('calendar-prev'), next = $('calendar-next'), dayTitle = $('calendar-day-title'), dayBody = $('calendar-day-body');
 
   for (const c of data.classes) {
     const label = el('label', 'cal-filter'), box = el('input');
     box.type = 'checkbox'; box.checked = !hidden.has(c);
-    box.addEventListener('change', () => { box.checked ? hidden.delete(c) : hidden.add(c); try { localStorage.setItem('calendar-hidden', JSON.stringify([...hidden])); } catch {} render(); });
+    box.addEventListener('change', () => { box.checked ? hidden.delete(c) : hidden.add(c); write('calendar-hidden', [...hidden]); render(); });
     label.append(box, el('span', 'cal-dot cal-' + slug(c)), document.createTextNode(c)); filters.append(label);
   }
+  for (const b of $('calendar-view').children) b.addEventListener('click', () => { view = b.dataset.view; write('calendar-view', view); render(); });
 
-  function render() {
-    const friday = add(week, 4);
-    title.textContent = `${month(week)} ${week.getDate()} – ${month(friday) === month(week) ? '' : month(friday) + ' '}${friday.getDate()}, ${friday.getFullYear()}`;
-    prev.disabled = week <= first; next.disabled = week >= last;
-    grid.replaceChildren();
-    for (let i = 0; i < 5; i++) {
-      const date = add(week, i), k = key(date), day = data.days[k] || {}, shown = data.classes.filter(c => day[c] && !hidden.has(c));
-      const cell = el('section', 'cal-day' + (k === todayKey ? ' cal-is-today' : ''));
-      const all = data.classes.filter(c => day[c]);
-      if (all.length && all.every(c => day[c].every(x => off.test(x)))) cell.classList.add('cal-off');
-      const head = el('h3', 'cal-date'); head.append(el('span', 'cal-weekday', names[i]), document.createTextNode(' ' + date.getDate()));
-      if (k === todayKey) head.append(el('span', 'cal-today-tag', 'today'));
-      cell.append(head);
-      if (!shown.length) cell.append(el('p', 'cal-empty', all.length ? 'Hidden by filter' : 'Nothing listed'));
-      for (const c of shown) {
-        const block = el('div', 'cal-class'), list = el('ul');
-        block.append(el('p', 'cal-class-name cal-' + slug(c), c));
-        for (const item of day[c]) list.append(el('li', important.test(item) && !off.test(item) ? 'cal-important' : '', item));
-        block.append(list); cell.append(block);
+  const isOff = day => { const all = data.classes.filter(c => day[c]); return all.length > 0 && all.every(c => day[c].every(x => off.test(x))); };
+  function classBlocks(day, into) {
+    for (const c of data.classes) {
+      if (!day[c] || hidden.has(c)) continue;
+      const block = el('div', 'cal-class'), list = el('ul'); block.append(el('p', 'cal-class-name cal-' + slug(c), c));
+      for (const item of day[c]) list.append(el('li', important.test(item) && !off.test(item) ? 'cal-important' : '', item));
+      block.append(list); into.append(block);
+    }
+  }
+  function select(d) { selected = d; cursor = new Date(d.getFullYear(), d.getMonth(), 1); render(); }
+
+  function renderMonth(tasks) {
+    title.textContent = cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    prev.disabled = cursor <= new Date(firstDay.getFullYear(), firstDay.getMonth(), 1);
+    next.disabled = cursor >= new Date(lastDay.getFullYear(), lastDay.getMonth(), 1);
+    grid.className = 'cal-month';
+    for (const [i, n] of WEEK.entries()) grid.append(el('div', 'cal-head' + (i > 4 ? ' cal-weekend' : ''), n));
+    const start = monday(cursor), end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+    for (let d = start; d <= end || d.getDay() !== 1; d = add(d, 1)) {
+      const k = key(d), day = data.days[k] || {}, cell = el('button', 'cal-cell'); cell.type = 'button';
+      if (d.getMonth() !== cursor.getMonth()) cell.classList.add('cal-out');
+      if (d.getDay() === 0 || d.getDay() === 6) cell.classList.add('cal-weekend');
+      if (k === todayKey) cell.classList.add('cal-is-today');
+      if (k === key(selected)) cell.classList.add('cal-selected');
+      if (isOff(day)) cell.classList.add('cal-off');
+      cell.append(el('span', 'cal-num', String(d.getDate())));
+      const chips = el('span', 'cal-chips');
+      if (isOff(day)) chips.append(el('span', 'cal-chip cal-chip-off', Object.values(day)[0][0]));
+      else for (const c of data.classes) {
+        if (!day[c] || hidden.has(c)) continue;
+        const big = day[c].find(x => important.test(x) && !off.test(x));
+        chips.append(el('span', 'cal-chip cal-' + slug(c) + (big ? ' cal-chip-big' : ''), big || day[c][0]));
       }
+      for (const t of tasks[k] || []) chips.append(el('span', 'cal-chip cal-chip-task', t));
+      cell.append(chips);
+      const label = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+      cell.setAttribute('aria-label', label + (chips.children.length ? `, ${chips.children.length} entries` : ''));
+      cell.addEventListener('click', () => select(d));
       grid.append(cell);
     }
-    upcoming.replaceChildren();
-    const start = todayKey < dates[0] ? dates[0] : todayKey; let count = 0;
+  }
+  function renderWeek(tasks) {
+    const start = monday(selected), friday = add(start, 4);
+    title.textContent = `${short(start)} ${start.getDate()} – ${short(friday) === short(start) ? '' : short(friday) + ' '}${friday.getDate()}, ${friday.getFullYear()}`;
+    prev.disabled = start <= monday(firstDay); next.disabled = start >= monday(lastDay);
+    grid.className = 'cal-grid';
+    for (let i = 0; i < 5; i++) {
+      const d = add(start, i), k = key(d), day = data.days[k] || {};
+      const cell = el('section', 'cal-day' + (k === todayKey ? ' cal-is-today' : '') + (isOff(day) ? ' cal-off' : ''));
+      const head = el('h3', 'cal-date'); head.append(el('span', 'cal-weekday', WEEK[i]), document.createTextNode(' ' + d.getDate()));
+      if (k === todayKey) head.append(el('span', 'cal-today-tag', 'today'));
+      cell.append(head); classBlocks(day, cell);
+      for (const t of tasks[k] || []) cell.append(el('p', 'cal-chip cal-chip-task', t));
+      if (cell.children.length === 1) cell.append(el('p', 'cal-empty', Object.keys(day).length ? 'Hidden by filter' : 'Nothing listed'));
+      grid.append(cell);
+    }
+  }
+  function renderDay(tasks) {
+    const k = key(selected), day = data.days[k] || {};
+    dayTitle.textContent = (k === todayKey ? 'Today · ' : '') + selected.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    dayBody.replaceChildren(); classBlocks(day, dayBody);
+    if (tasks[k]) { const block = el('div', 'cal-class'), list = el('ul'); block.append(el('p', 'cal-class-name cal-task-name', 'My tasks')); for (const t of tasks[k]) list.append(el('li', '', t)); block.append(list); dayBody.append(block); }
+    if (!dayBody.children.length) dayBody.append(el('p', 'cal-empty', Object.keys(day).length ? 'Hidden by filter.' : 'Nothing listed for this day.'));
+  }
+  function renderUpcoming() {
+    upcoming.replaceChildren(); let count = 0;
     for (const k of dates) {
-      if (k < start || count >= 20) continue;
+      if (k < todayKey || count >= 12) continue;
       for (const c of data.classes) for (const item of (!hidden.has(c) && data.days[k][c]) || []) {
-        if (!important.test(item) || off.test(item) || count >= 20) continue;
+        if (!important.test(item) || off.test(item) || count >= 12) continue;
         const d = parse(k), li = el('li');
-        li.append(el('span', 'cal-up-date', `${names[d.getDay() - 1]} ${month(d)} ${d.getDate()}`), el('span', 'cal-class-name cal-' + slug(c), c), document.createTextNode(' ' + item));
-        upcoming.append(li); count++;
+        li.append(el('span', 'cal-up-date', `${WEEK[(d.getDay() + 6) % 7]} ${short(d)} ${d.getDate()}`), el('span', 'cal-class-name cal-' + slug(c), c), document.createTextNode(' ' + item));
+        li.addEventListener('click', () => select(d)); upcoming.append(li); count++;
       }
     }
     if (!count) upcoming.append(el('li', 'muted', 'Nothing coming up in the listed calendars.'));
   }
-  prev.addEventListener('click', () => { week = clamp(add(week, -7)); render(); });
-  next.addEventListener('click', () => { week = clamp(add(week, 7)); render(); });
-  now.addEventListener('click', () => { week = clamp(monday(new Date())); render(); });
-  const range = c => { const [a, b] = data.coverage[c].map(parse); return `${c}: ${month(a)} ${a.getDate()} – ${month(b)} ${b.getDate()}`; };
-  document.getElementById('calendar-coverage').textContent = 'Listed so far — ' + data.classes.map(range).join(' · ') + '.';
+  function render() {
+    const tasks = tasksByDay(); grid.replaceChildren();
+    for (const b of $('calendar-view').children) b.setAttribute('aria-pressed', String(b.dataset.view === view));
+    prev.setAttribute('aria-label', 'Previous ' + view); next.setAttribute('aria-label', 'Next ' + view);
+    view === 'month' ? renderMonth(tasks) : renderWeek(tasks);
+    renderDay(tasks); renderUpcoming();
+  }
+  const step = n => {
+    if (view === 'month') { const m = new Date(cursor.getFullYear(), cursor.getMonth() + n, 1); select(clampDay(key(m).slice(0, 7) === todayKey.slice(0, 7) ? new Date() : m)); }
+    else select(clampDay(add(selected, 7 * n)));
+  };
+  prev.addEventListener('click', () => step(-1));
+  next.addEventListener('click', () => step(1));
+  $('calendar-today').addEventListener('click', () => select(clampDay(new Date())));
+  window.addEventListener('calendar-goto', e => { const d = parse(e.detail); if (!isNaN(d)) select(d); });
+  window.addEventListener('tasks-changed', render);
+  const range = c => { const [a, b] = data.coverage[c].map(parse); return `${c}: ${short(a)} ${a.getDate()} – ${short(b)} ${b.getDate()}`; };
+  $('calendar-coverage').textContent = 'Listed so far — ' + data.classes.map(range).join(' · ') + '.';
   render();
 })();

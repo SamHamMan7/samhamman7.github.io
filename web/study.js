@@ -7,7 +7,7 @@
     const box = $('sources-' + group); if (!box) continue;
     box.replaceChildren(...list.map(([name, url, blurb, icon, color]) => {
       const a = el('a', 'source'); a.href = url; a.target = '_blank'; a.rel = 'noopener';
-      const text = el('span', 'source-text'); text.append(el('strong', '', name), el('span', '', blurb)); a.append(window.SiteIcons.tile(name, icon, color), text); return a;
+      const text = el('span', 'source-text'); text.append(el('strong', '', name), el('span', '', blurb)); a.append(window.SiteIcons.tile(name, icon, color, url), text); return a;
     }));
   }
   const sections = Object.keys(notes), tabs = $('study-sections'), list = $('study-topics'), title = $('study-section-name');
