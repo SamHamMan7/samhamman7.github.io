@@ -42,8 +42,16 @@ artwork retains its respective owners' rights. See `dist/credits.html`.
 The battle workers now include the validated Very Strong RandBats controller
 from bot commit `fbe416b`. The personal pages, static/silent browser adapter,
 prepared media and other games are preserved. No Arena credentials or neural
-weights are hosted. Champions Arena needs its separate Node controller and is
-not a format this static site can run.
+weights are hosted.
+
+**Champions VGC (Reg M-C)** now runs fully in the browser: `champions.worker.js`
+bundles the pinned Showdown simulator (base + champions data only) and the same
+stable search Discharge uses on vgc.bot. "Very Strong" is that search (about
+1-3 s per turn); Medium/Strong use the quick lookahead. The worker is prebuilt
+from bot commit `c7a23a7` with `node scripts/build-champions-browser.mjs`
+(CI has no pinned simulator), committed as `web/champions.worker.js`, and its
+SHA-256 is checked in `bot-updates/current.json`. Its source is in the overlay
+archive and the source download.
 
 To update the workers again, use a fresh checkout and an existing committed bot:
 
