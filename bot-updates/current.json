@@ -1,13 +1,14 @@
 {
-  "archive": "bot-updates/c7a23a7.zip",
-  "sha256": "d4f4dc39ebce3ccd06c1064c1c4b01cc638dba5d45626a23e8eb1cd71e87d803",
+  "archive": "bot-updates/c7a23a7-rated.zip",
+  "sha256": "b9c507d70716a96ff0958278c2ec779d89fbb713100a2bf7bb371f28e4b61bcc",
   "botUpdate": {
     "sourceCommit": "5e8e9e8",
     "updated": "2026-11-12",
     "policy": "public-set response search for Very Strong RandBats",
     "otherFormats": "unchanged stable singles/doubles controllers",
     "browserAdapter": "static sprites, move animations on, silent",
-    "championsArena": "Champions VGC runs in a browser worker using the stable Discharge search (native-reply-control) for Very Strong"
+    "championsArena": "Champions VGC runs in a browser worker using the stable Discharge search (native-reply-control) for Very Strong",
+    "ratedPlay": "AI level \"Rated\" keeps a per-format rating in the browser and picks Medium, Strong or Very Strong from it"
   },
   "expectedWorkers": {
     "ai.worker.js": "918991edfb4a877f3fc5e11b90b22e9c827a196187479d2f3775a5838bc266e7",

@@ -77,6 +77,16 @@
   });
   window.addEventListener('storage', e => { if (e.key === KEY) draw(); });
   window.addEventListener('hashchange', draw);
+  // Rated play: the bot keeps a per-format rating in this browser; show it on the Games tab.
+  const NAMES = { gen9championsvgc2026regmc: 'Champions VGC', gen9ou: 'OU', gen9randombattle: 'Random Battle', gen9randomdoublesbattle: 'Random Doubles' };
+  const drawRatings = () => {
+    const box = $('rating-list'); if (!box) return; let store = {}; try { store = JSON.parse(localStorage.getItem('offline-showdown-rating') || '{}') || {}; } catch {}
+    const rows = Object.entries(store).filter(([, r]) => r && Number.isFinite(r.rating));
+    box.replaceChildren(...rows.map(([f, r]) => { const li = el('li', 'rating'); li.append(el('strong', 'rating-n', String(r.rating)), el('span', 'rating-name', NAMES[f] || f), el('span', 'rating-sub', `${r.wins}W ${r.losses}L · peak ${r.peak || r.rating} · next: ${r.rating < 1125 ? 'Medium' : r.rating < 1375 ? 'Strong' : 'Very Strong'}`)); return li; }));
+    if (!rows.length) box.append(el('li', 'muted', 'No rated games yet. In the bot, set AI level to “Rated”.'));
+  };
+  window.addEventListener('storage', e => { if (e.key === 'offline-showdown-rating') drawRatings(); });
+  window.addEventListener('hashchange', drawRatings); drawRatings();
   window.SiteTeams = { pack, read };
   draw();
 })();
