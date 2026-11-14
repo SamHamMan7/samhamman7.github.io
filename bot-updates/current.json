@@ -1,8 +1,8 @@
 {
-  "archive": "bot-updates/1cd3c32.zip",
-  "sha256": "44999e8425b1677714bf661c13a94bb397774c6fd684b5e275c3c10210c96de1",
+  "archive": "bot-updates/3e2f4e1.zip",
+  "sha256": "5d0206b32c727ffbcd4357e1e82f43a8521832cf344d417bcd31c9c7925e4262",
   "botUpdate": {
-    "sourceCommit": "1cd3c32",
+    "sourceCommit": "3e2f4e1",
     "updated": "2026-11-14",
     "policy": "public-set response search for Very Strong RandBats",
     "otherFormats": "unchanged stable singles/doubles controllers",
@@ -17,7 +17,7 @@
   },
   "championsWorker": {
     "file": "web/champions.worker.js",
-    "sha256": "aa8e75cd8553c98491b630ba52bfaf0dea4c7be66caa28f2021f4187592c1232",
-    "builtFrom": "bot commit 1cd3c32, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
+    "sha256": "2a196eb3d2fc7508adb47823686066869770ba93861b78a5f12d5afd400fccf9",
+    "builtFrom": "bot commit 3e2f4e1, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }
