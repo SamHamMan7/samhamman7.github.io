@@ -9,7 +9,7 @@
     }
     document.title = selected.textContent === 'Home' ? 'my site' : selected.textContent + ' · my site';
   }
-  window.addEventListener('hashchange', showTab); showTab();
+  window.addEventListener('hashchange', () => { showTab(); window.scrollTo(0, 0); }); showTab();
   document.querySelector('[role=tablist]').addEventListener('keydown', event => {
     const index = tabs.indexOf(document.activeElement);
     if (index < 0) return;

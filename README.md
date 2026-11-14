@@ -75,3 +75,5 @@ its source ZIP/offline packs are regenerated together. For a fresh local clone:
 python apply-bot-update.py C:\path\to\PokemonShowdownOfflineBot\node_modules
 node serve.mjs
 ```
+
+Games tab: "My teams" lists the teams saved in the Showdown teambuilder (same browser storage), adds teams from pasted export text, and backs them up to a file.

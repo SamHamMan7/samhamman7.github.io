@@ -112,6 +112,8 @@
       }));
     };
     drawWeek(); window.addEventListener('tasks-changed', drawWeek);
+    // On a phone the week scrolls sideways; start it on today.
+    const here = today.querySelector('.week-today'); if (here && today.scrollWidth > today.clientWidth) today.scrollLeft = here.offsetLeft - today.offsetLeft - 8;
     // ---- coming up, each with a button that turns it into a task ----
     const soon = ahead.slice(0, 7);
     for (const a of soon) {
