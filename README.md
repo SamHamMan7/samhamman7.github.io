@@ -1,8 +1,8 @@
 # My personal website
 
-A simple site with Home, Games, Math practice, and Accomplishments tabs.
+A simple site with Home, Games, Practice, Calendar, and Accomplishments tabs.
 Games: the offline Pokémon Showdown bot, Tessera, and Spin & Freeze.
-Math practice: 16 original AMC/AIME-style questions with hints and solutions.
+Practice: live practice sites (USNCO quizzes, AMC Trivial) load inside the page; no preset questions.
 
 Intended address: https://samhamman7.github.io/
 
@@ -10,7 +10,7 @@ Intended address: https://samhamman7.github.io/
 
 Run `node serve.mjs` and open http://127.0.0.1:4175.
 The ready-to-host website is in `dist/`. The personal page source is in `web/`.
-Use `node verify-practice.mjs` to check the math answer keys.
+Use `node verify-practice.mjs` to check the study notes and source links.
 The games in `web/games/` are single files; Tessera has a size control and Spin & Freeze
 turns to fill an upright phone. Git keeps their bytes exactly (`-text`).
 
@@ -28,7 +28,7 @@ The workflow publishes only `dist/`, with no build or paid service required.
 ## Offline play
 
 Use Games → Download for offline on Wi-Fi and wait for Ready for offline.
-About 63 MB includes all three games, sprites, and math practice. Browser
+About 63 MB includes all three games, sprites, and the rest of the site. Browser
 storage can be cleared by the device; check readiness before a trip.
 Physical phone performance has not been verified.
 

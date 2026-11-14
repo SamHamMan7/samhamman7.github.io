@@ -21,52 +21,6 @@
     if (target) { event.preventDefault(); target.focus(); location.hash = target.hash; }
   });
 
-  const problems = window.PRACTICE_PROBLEMS;
-  const set = document.getElementById('problem-set'), picker = document.getElementById('problem-picker');
-  const answerOptions = document.getElementById('answer-options'), integer = document.getElementById('answer-integer'), feedback = document.getElementById('answer-feedback');
-  let filtered = problems, current;
-  function showProblem(id) {
-    current = filtered.find(p => p.id === id) || filtered[0]; picker.value = current.id;
-    document.getElementById('problem-category').textContent = current.set + ' style · ' + current.topic;
-    document.getElementById('problem-title').textContent = current.title;
-    document.getElementById('problem-statement').textContent = current.statement;
-    document.getElementById('hint-text').textContent = current.hint;
-    document.getElementById('solution-text').textContent = current.solution;
-    document.getElementById('problem-hint').open = false; document.getElementById('problem-solution').open = false;
-    document.getElementById('problem-position').textContent = `${filtered.indexOf(current) + 1} / ${filtered.length}`;
-    const aime = current.set === 'AIME';
-    answerOptions.hidden = aime; document.getElementById('integer-answer').hidden = !aime;
-    integer.disabled = !aime; integer.required = aime; integer.value = '';
-    answerOptions.replaceChildren();
-    const legend = document.createElement('legend'); legend.textContent = 'Your answer'; answerOptions.append(legend);
-    for (const [index, choice] of (current.choices || []).entries()) {
-      const label = document.createElement('label'), input = document.createElement('input');
-      input.type = 'radio'; input.name = 'choice'; input.value = index; input.required = true;
-      label.append(input, `${String.fromCharCode(65 + index)}. ${choice}`); answerOptions.append(label);
-    }
-    feedback.textContent = ''; feedback.className = '';
-  }
-  function fillPicker() {
-    filtered = problems.filter(p => set.value === 'all' || p.set === set.value);
-    picker.replaceChildren(...filtered.map(p => new Option(p.id.toUpperCase() + ' · ' + p.title,p.id)));
-    showProblem(filtered[0].id);
-  }
-  set.addEventListener('change', fillPicker);
-  picker.addEventListener('change', () => showProblem(picker.value));
-  document.getElementById('random-problem').addEventListener('click', () => {
-    const others = filtered.filter(p => p !== current); showProblem(others[Math.floor(Math.random() * others.length)].id);
-  });
-  document.getElementById('previous-problem').addEventListener('click', () => showProblem(filtered[(filtered.indexOf(current) + filtered.length - 1) % filtered.length].id));
-  document.getElementById('next-problem').addEventListener('click', () => showProblem(filtered[(filtered.indexOf(current) + 1) % filtered.length].id));
-  document.getElementById('answer-form').addEventListener('submit', event => {
-    event.preventDefault();
-    const selected = new FormData(event.currentTarget).get(current.set === 'AIME' ? 'integer' : 'choice');
-    const correct = selected !== null && String(selected).trim() !== '' && Number(selected) === current.answer;
-    feedback.textContent = correct ? 'Correct.' : 'Not quite. Try again, or open the hint.';
-    feedback.className = correct ? 'correct' : 'incorrect';
-  });
-  fillPicker();
-
   const button = document.getElementById('download-offline');
   const status = document.getElementById('download-status');
   const progress = document.getElementById('download-progress');
