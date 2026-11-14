@@ -26,7 +26,7 @@ window.SiteIcons = (() => {
   // Known destinations get a fitting glyph and colour; anything else gets its first letter.
   const KNOWN = [[/schoology/i, 'book', '#2f6fd0'], [/classlink/i, 'grid', '#0f9d8a'], [/claude/i, 'chat', '#e0562b'], [/chatgpt|openai/i, 'prompt', '#1f9d63'], [/aniko|sat/i, 'target', '#d9891a'], [/desmos|math/i, 'sigma', '#7a4fd6'], [/calendar/i, 'calendar', '#c2410c']];
   const PALETTE = ['#2f6fd0', '#0f9d8a', '#e0562b', '#7a4fd6', '#d9891a', '#c23a6b', '#1f9d63'];
-  const ICON_HOST = { 'app.schoology.com': 'schoology.com' };
+  const ICON_HOST = { 'app.schoology.com': 'schoology.com', 'csisd.schoology.com': 'schoology.com' };
   const logoUrl = host => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
   function tile(name, icon, color, url) {
     const span = document.createElement('span'); span.className = 'tile-icon';
