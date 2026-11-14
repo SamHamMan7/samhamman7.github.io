@@ -1,6 +1,6 @@
 // Study help: practice questions by subject, with progress kept on this device.
 (() => {
-  const problems = window.STUDY_PROBLEMS, topics = window.STUDY_TOPICS, root = document.getElementById('study');
+  const problems = window.STUDY_PROBLEMS, topics = window.STUDY_TOPICS, links = window.STUDY_LINKS || [], root = document.getElementById('study');
   if (!problems || !root) return;
   const $ = id => document.getElementById(id);
   const subject = $('study-subject'), picker = $('study-picker'), options = $('study-options'), feedback = $('study-feedback');
@@ -49,5 +49,6 @@
     }
   });
   $('study-reset').addEventListener('click', () => { for (const p of filtered) solved.delete(p.id); try { localStorage.setItem('study-solved', JSON.stringify([...solved])); } catch {} fill(); });
+  $('study-links').replaceChildren(...links.map(([name, url]) => { const li = document.createElement('li'), a = document.createElement('a'); a.href = url; a.textContent = name; a.target = '_blank'; a.rel = 'noopener'; li.append(a); return li; }));
   fill();
 })();
