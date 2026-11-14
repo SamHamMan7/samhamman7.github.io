@@ -1,15 +1,15 @@
 {
-  "archive": "bot-updates/eabf6c6.zip",
-  "sha256": "a3dc581075d824346c44e5de68057f2a72f20dfe16cc0bde588ba8055925c201",
+  "archive": "bot-updates/1cd3c32.zip",
+  "sha256": "44999e8425b1677714bf661c13a94bb397774c6fd684b5e275c3c10210c96de1",
   "botUpdate": {
-    "sourceCommit": "eabf6c6",
+    "sourceCommit": "1cd3c32",
     "updated": "2026-11-14",
     "policy": "public-set response search for Very Strong RandBats",
     "otherFormats": "unchanged stable singles/doubles controllers",
     "browserAdapter": "static sprites, move animations on, silent",
     "championsArena": "Champions VGC runs in a browser worker using the stable Discharge search (native-reply-control) for Very Strong",
     "ratedPlay": "AI level \"Rated\" keeps a per-format rating in the browser and picks Medium, Strong or Very Strong from it",
-    "variety": "Champions bot goes through its whole team pool in a shuffled order before repeating, lightly remixes sets with a legality check, and samples wider among near-best moves"
+    "variety": "Champions bot goes through its whole team pool in a shuffled order before repeating, remixes sets only with moves, items and abilities that published teams gave the same species, and samples wider among near-best moves"
   },
   "expectedWorkers": {
     "ai.worker.js": "918991edfb4a877f3fc5e11b90b22e9c827a196187479d2f3775a5838bc266e7",
@@ -17,7 +17,7 @@
   },
   "championsWorker": {
     "file": "web/champions.worker.js",
-    "sha256": "e4b4e2a27d556f61474ad3d33243b8e68755eac2f6a5c96f6c6b8b5a3ecd493e",
-    "builtFrom": "bot commit eabf6c6, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
+    "sha256": "aa8e75cd8553c98491b630ba52bfaf0dea4c7be66caa28f2021f4187592c1232",
+    "builtFrom": "bot commit 1cd3c32, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }
