@@ -18,9 +18,11 @@
   $('dash-date').textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
   // ---- apps ----
-  const DEFAULT_LINKS = [['Schoology', 'https://app.schoology.com/login'], ['ClassLink', 'https://launchpad.classlink.com/'], ['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Aniko', 'https://www.aniko.ai/'], ['AMC Trivial', 'https://amctrivial.com/'], ['USNCO quizzes', 'https://usnco-quizzes.web.app/'], ['Desmos', 'https://www.desmos.com/calculator'], ['Showdown', 'https://play.pokemonshowdown.com/'], ['GitHub', 'https://github.com/']];
+  const DEFAULT_LINKS = [['Schoology', 'https://csisd.schoology.com/'], ['ClassLink', 'https://launchpad.classlink.com/csisd'], ['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Aniko', 'https://www.aniko.ai/'], ['AMC Trivial', 'https://amctrivial.com/'], ['USNCO quizzes', 'https://usnco-quizzes.web.app/'], ['Desmos', 'https://www.desmos.com/calculator'], ['Showdown', 'https://play.pokemonshowdown.com/'], ['GitHub', 'https://github.com/']];
   const safeUrl = u => { try { const x = new URL(u); return x.protocol === 'https:' || x.protocol === 'http:' ? x.href : null; } catch { return null; } };
   let links = load('dash-links-2', null); if (!Array.isArray(links) || !links.length) links = DEFAULT_LINKS;
+  // College Station ISD addresses replace the generic login pages in lists saved earlier.
+  links = links.map(([n, u]) => u === 'https://app.schoology.com/login' ? [n, 'https://csisd.schoology.com/'] : u === 'https://launchpad.classlink.com/' ? [n, 'https://launchpad.classlink.com/csisd'] : [n, u]);
   const bar = $('dash-links'), editor = $('dash-editor'), rows = $('dash-rows');
   function drawLinks() {
     bar.replaceChildren(...links.filter(([n, u]) => n && safeUrl(u)).map(([name, url]) => { const a = el('a', 'app'); a.href = safeUrl(url); a.target = '_blank'; a.rel = 'noopener'; a.append(window.SiteIcons.tile(name, null, null, url), el('span', 'app-name', name)); return a; }));
@@ -54,11 +56,12 @@
     'Run the bot’s neural training overnight (keep the PC awake)',
     'Chem Olympiad: one USNCO practice quiz',
     'Download the site again on my phone for offline',
-    'Put my district’s Schoology and ClassLink links in My apps',
+    'Battlecode bot: run another improve-and-test loop',
     'Ask for the AP Lang spring calendar',
   ];
   let tasks = load('dash-tasks', null);
   if (!Array.isArray(tasks)) { tasks = SEED.map((text, i) => ({ id: 'seed' + i, text, due: '', done: false })); const t = ahead.find(a => exam.test(a.item)); if (t) tasks.unshift({ id: 'seed-test', text: `Study for ${t.c}: ${t.item}`, due: t.k, done: false }); }
+  if (load('dash-tasks-v', 1) < 2) { tasks = tasks.filter(t => t.id !== 'seed3' || !/district/.test(t.text)); if (!tasks.some(t => /battlecode/i.test(t.text))) tasks.push({ id: 'seed-bc', text: 'Battlecode bot: run another improve-and-test loop', due: '', done: false }); save('dash-tasks-v', 2); save('dash-tasks', tasks); }
   const taskList = $('task-list'), taskForm = $('task-form'), taskCount = $('task-count');
   const commit = () => { save('dash-tasks', tasks); drawTasks(); drawStats(); drawMini(); window.dispatchEvent(new Event('tasks-changed')); };
   const addTask = (text, due = '') => { tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: text.slice(0, 140), due, done: false }); commit(); };
