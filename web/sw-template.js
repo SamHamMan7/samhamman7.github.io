@@ -1,6 +1,6 @@
 const VERSION = '__VERSION__';
 const CACHE = 'math-play-' + VERSION;
-const CORE = ['/index.html', '/site.css', '/site.js', '/practice-problems.js', '/site-icon.svg', '/icon-192.png', '/icon-512.png', '/manifest.webmanifest', '/offline-manifest.json'];
+const CORE = ['/index.html', '/site.css', '/site.js', '/site-icon.svg', '/icon-192.png', '/icon-512.png', '/manifest.webmanifest', '/offline-manifest.json'];
 let manifestPromise, downloading;
 const blobs = new Map();
 async function manifest() {

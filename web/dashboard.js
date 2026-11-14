@@ -86,18 +86,29 @@
   const today = $('dash-today'), upcoming = $('dash-upcoming');
   const target = dates.find(k => k >= todayKey);
   if (cal) {
-    if (!target) today.append(el('p', 'muted', 'Nothing more is listed in the class calendars.'));
-    else {
-      $('dash-today-title').textContent = target === todayKey ? 'Today' : 'Next school day · ' + pretty(parse(target));
-      for (const c of cal.classes) {
-        const items = cal.days[target][c]; if (!items) continue;
-        const block = el('div', 'cal-class'), list = el('ul'); block.append(el('p', 'cal-class-name cal-' + slug(c), c));
-        for (const item of items) list.append(el('li', important.test(item) && !off.test(item) ? 'cal-important' : '', item));
-        block.append(list); today.append(block);
-      }
-    }
+    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate()); base.setDate(base.getDate() - ((base.getDay() + 6) % 7) + (base.getDay() === 6 || base.getDay() === 0 ? 7 : 0));
+    const drawWeek = () => {
+      const due = {}; for (const t of tasks) if (t.due && !t.done) (due[t.due] ||= []).push(t.text);
+      $('dash-today-title').textContent = key(base) > todayKey ? 'Next week' : 'This week';
+      today.replaceChildren(...[0, 1, 2, 3, 4].map(i => {
+        const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i), k = key(d), day = cal.days[k] || {}, items = Object.values(day).flat();
+        const col = el('div', 'week-day' + (k === todayKey ? ' week-today' : k < todayKey ? ' week-past' : '') + (items.length && items.every(x => off.test(x)) ? ' week-off' : ''));
+        const head = el('button', 'week-head'); head.type = 'button'; head.append(el('span', 'week-name', names[d.getDay()]), el('span', 'week-num', String(d.getDate()))); if (k === todayKey) head.append(el('span', 'week-tag', 'today'));
+        head.setAttribute('aria-label', 'Open ' + d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + ' in the calendar'); head.addEventListener('click', () => goCalendar(k)); col.append(head);
+        for (const c of cal.classes) {
+          if (!day[c]) continue;
+          const block = el('div', 'cal-class'), list = el('ul'); block.append(el('p', 'cal-class-name cal-' + slug(c), c));
+          for (const item of day[c]) list.append(el('li', important.test(item) && !off.test(item) ? 'cal-important' : '', item));
+          block.append(list); col.append(block);
+        }
+        for (const t of due[k] || []) col.append(el('p', 'cal-chip cal-chip-task', t));
+        if (col.children.length === 1) col.append(el('p', 'cal-empty', 'Nothing listed'));
+        return col;
+      }));
+    };
+    drawWeek(); window.addEventListener('tasks-changed', drawWeek);
     // ---- coming up, each with a button that turns it into a task ----
-    const soon = ahead.filter(a => a.k !== target).slice(0, 7);
+    const soon = ahead.slice(0, 7);
     for (const a of soon) {
       const li = el('li'), plus = el('button', 'up-add', '+'); plus.type = 'button'; plus.title = 'Add to my tasks'; plus.setAttribute('aria-label', `Add to my tasks: ${a.c} ${a.item}`);
       plus.addEventListener('click', () => { addTask(`${a.c}: ${a.item}`, a.k); plus.textContent = '✓'; plus.disabled = true; });
@@ -156,32 +167,54 @@
     if (!list.length) counts.append(el('li', 'muted', 'No tests listed.'));
   }
 
-  // ---- focus timer ----
-  const clock = $('timer-clock'), ring = $('timer-ring'), go = $('timer-go'), modes = $('timer-modes');
+  // ---- focus timer: editable focus and break lengths, optional auto-switch, a label for what you're doing ----
+  const clock = $('timer-clock'), ring = $('timer-ring'), go = $('timer-go');
   if (clock) {
-    let total = 25 * 60, left = total, endAt = 0, tick = null;
+    const cfg = Object.assign({ focus: 25, rest: 5, auto: true, what: '' }, load('dash-timer', {}));
     const tally = load('dash-focus-tally', {}), baseTitle = document.title;
+    const fIn = $('timer-focus'), rIn = $('timer-rest'), auto = $('timer-auto'), what = $('timer-what'), modes = $('timer-modes'), presets = $('timer-presets');
+    let mode = 'focus', total = cfg.focus * 60, left = total, endAt = 0, tick = null;
+    const clampMin = (v, max) => Math.min(max, Math.max(1, Math.round(+v) || 1));
+    const keep = () => save('dash-timer', cfg);
     const show = () => {
       clock.textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
-      ring.style.setProperty('--p', String(1 - left / total)); go.textContent = tick ? 'Pause' : left < total && left > 0 ? 'Resume' : 'Start';
-      const n = tally[todayKey] || 0; $('timer-tally').textContent = `${n} focus ${n === 1 ? 'session' : 'sessions'} today`;
-      document.title = tick ? `${clock.textContent} · ${baseTitle}` : baseTitle;
+      ring.style.setProperty('--p', String(1 - left / total)); ring.classList.toggle('is-rest', mode === 'rest'); ring.classList.toggle('is-running', !!tick);
+      go.textContent = tick ? 'Pause' : left < total && left > 0 ? 'Resume' : 'Start';
+      $('timer-label').textContent = mode === 'rest' ? 'Break' : cfg.what.trim() || 'Focus';
+      for (const b of modes.children) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+      for (const b of presets.children) b.setAttribute('aria-pressed', String(+b.dataset.min === cfg.focus));
+      const n = tally[todayKey] || 0, mins = tally[todayKey + 'm'] || 0;
+      $('timer-dots').replaceChildren(...Array.from({ length: Math.max(4, Math.min(n, 12)) }, (_, i) => el('span', 'dot' + (i < n ? ' on' : ''))));
+      $('timer-tally').textContent = n ? `${n} ${n === 1 ? 'session' : 'sessions'} · ${mins} min focused today` : 'No sessions yet today';
+      document.title = tick ? `${clock.textContent} ${mode === 'rest' ? 'break' : 'focus'} · ${baseTitle}` : baseTitle;
     };
     const stop = () => { clearInterval(tick); tick = null; };
-    const beep = () => { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value = 660; g.gain.setValueAtTime(.15, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .9); o.start(); o.stop(a.currentTime + .9); } catch {} };
-    const setMode = minutes => { stop(); total = left = minutes * 60; for (const b of modes.children) b.setAttribute('aria-pressed', String(+b.dataset.min === minutes)); show(); };
-    for (const b of modes.children) b.addEventListener('click', () => setMode(+b.dataset.min));
-    go.addEventListener('click', () => {
-      if (tick) { stop(); return show(); }
+    const beep = () => { try { const a = new (window.AudioContext || window.webkitAudioContext)(); [660, 880].forEach((f, i) => { const o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value = f; const t = a.currentTime + i * .28; g.gain.setValueAtTime(.15, t); g.gain.exponentialRampToValueAtTime(.001, t + .5); o.start(t); o.stop(t + .5); }); } catch {} };
+    const setMode = m => { stop(); mode = m; total = left = (m === 'rest' ? cfg.rest : cfg.focus) * 60; show(); };
+    const start = () => {
       if (left <= 0) left = total;
       endAt = Date.now() + left * 1000;
       tick = setInterval(() => {
         left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
-        if (left === 0) { stop(); beep(); if (total >= 20 * 60) { tally[todayKey] = (tally[todayKey] || 0) + 1; save('dash-focus-tally', { [todayKey]: tally[todayKey] }); } }
+        if (left === 0) {
+          stop(); beep(); const was = mode;
+          if (was === 'focus') { tally[todayKey] = (tally[todayKey] || 0) + 1; tally[todayKey + 'm'] = (tally[todayKey + 'm'] || 0) + Math.round(total / 60); save('dash-focus-tally', { [todayKey]: tally[todayKey], [todayKey + 'm']: tally[todayKey + 'm'] }); }
+          setMode(was === 'focus' ? 'rest' : 'focus'); if (cfg.auto) start(); return;
+        }
         show();
       }, 250); show();
-    });
+    };
+    fIn.value = cfg.focus; rIn.value = cfg.rest; auto.checked = cfg.auto; what.value = cfg.what;
+    fIn.addEventListener('change', () => { cfg.focus = clampMin(fIn.value, 180); fIn.value = cfg.focus; keep(); if (mode === 'focus') setMode('focus'); else show(); });
+    rIn.addEventListener('change', () => { cfg.rest = clampMin(rIn.value, 60); rIn.value = cfg.rest; keep(); if (mode === 'rest') setMode('rest'); });
+    auto.addEventListener('change', () => { cfg.auto = auto.checked; keep(); });
+    what.addEventListener('input', () => { cfg.what = what.value.slice(0, 60); keep(); show(); });
+    for (const b of modes.children) b.addEventListener('click', () => setMode(b.dataset.mode));
+    for (const b of presets.children) b.addEventListener('click', () => { cfg.focus = +b.dataset.min; fIn.value = cfg.focus; keep(); setMode('focus'); });
+    go.addEventListener('click', () => { if (tick) { stop(); show(); } else start(); });
     $('timer-reset').addEventListener('click', () => { stop(); left = total; show(); });
+    $('timer-plus').addEventListener('click', () => { left += 300; total = Math.max(total, left); if (tick) endAt += 300000; show(); });
+    $('timer-skip').addEventListener('click', () => setMode(mode === 'focus' ? 'rest' : 'focus'));
     show();
   }
 
