@@ -1,15 +1,16 @@
 {
-  "archive": "bot-updates/3e2f4e1.zip",
-  "sha256": "5d0206b32c727ffbcd4357e1e82f43a8521832cf344d417bcd31c9c7925e4262",
+  "archive": "bot-updates/910860a.zip",
+  "sha256": "d60606cf5849c15f415f3dcda1c7a897fbf6147a40ab968472a16a88aa6ad166",
   "botUpdate": {
-    "sourceCommit": "3e2f4e1",
+    "sourceCommit": "910860a",
     "updated": "2026-11-14",
     "policy": "public-set response search for Very Strong RandBats",
     "otherFormats": "unchanged stable singles/doubles controllers",
     "browserAdapter": "static sprites, move animations on, silent",
     "championsArena": "Champions VGC runs in a browser worker using the stable Discharge search (native-reply-control) for Very Strong",
     "ratedPlay": "AI level \"Rated\" keeps a per-format rating in the browser and picks Medium, Strong or Very Strong from it",
-    "variety": "Champions bot goes through its whole team pool in a shuffled order before repeating, remixes sets only with moves, items and abilities that published teams gave the same species, and samples wider among near-best moves"
+    "variety": "Champions bot goes through its whole team pool in a shuffled order before repeating, remixes sets only with moves, items and abilities that published teams gave the same species, and samples wider among near-best moves",
+    "switching": "Very Strong pays a small search cost for switching, larger for consecutive switches and for cycling a Pokemon back in or out"
   },
   "expectedWorkers": {
     "ai.worker.js": "918991edfb4a877f3fc5e11b90b22e9c827a196187479d2f3775a5838bc266e7",
@@ -17,7 +18,7 @@
   },
   "championsWorker": {
     "file": "web/champions.worker.js",
-    "sha256": "2a196eb3d2fc7508adb47823686066869770ba93861b78a5f12d5afd400fccf9",
-    "builtFrom": "bot commit 3e2f4e1, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
+    "sha256": "e075eaea9e3a80432bdf07622320596ea178d588a767de1147cef56f8c1955af",
+    "builtFrom": "bot commit 910860a, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }

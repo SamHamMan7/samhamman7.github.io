@@ -10,17 +10,24 @@ window.Profile = (() => {
   // Set to {salt, hash} to make Sam's passphrase the same on every device (see profile dialog).
   const OWNER_LOCK = null;
   const STARTER_APPS = [['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Gmail', 'https://mail.google.com/'], ['Google Drive', 'https://drive.google.com/'], ['Classroom', 'https://classroom.google.com/'], ['YouTube', 'https://www.youtube.com/'], ['Desmos', 'https://www.desmos.com/calculator'], ['Khan Academy', 'https://www.khanacademy.org/'], ['Quizlet', 'https://quizlet.com/'], ['AMC Trivial', 'https://amctrivial.com/'], ['USNCO quizzes', 'https://usnco-quizzes.web.app/'], ['Showdown', 'https://play.pokemonshowdown.com/'], ['GitHub', 'https://github.com/'], ['Aniko', 'https://www.aniko.ai/']];
-  let list = read('profiles', null);
-  if (!Array.isArray(list) || !list.length) list = [{ id: '', name: 'Sam', accent: 'amber', classes: true }];
-  if (!list.some(p => p.id === '')) list.unshift({ id: '', name: 'Sam', accent: 'amber', classes: true });
-  let me = list.find(p => p.id === read('profile-active', '')) || list[0];
+  let list = read('profiles', null); if (!Array.isArray(list)) list = [];
+  // Sam's account is only offered in a browser that already holds it: one where it has a
+  // passphrase, or where Sam's dashboard was used before accounts existed. Everywhere else it
+  // does not appear at all; it reaches a new device only through an exported account file.
+  const legacy = (() => { try { return ['dash-tasks', 'dash-links-2', 'dash-grades', 'dash-notes', 'signed-in:'].some(k => localStorage.getItem(k) !== null); } catch { return false; } })();
+  const owner = list.find(p => p.id === '');
+  if (owner && !owner.lock && !legacy) list = list.filter(p => p !== owner);
+  if (!owner && legacy) list.unshift({ id: '', name: 'Sam', accent: 'amber', classes: true });
+  const NOBODY = { id: '?', name: '', accent: 'amber', classes: false };
+  let me = list.find(p => p.id === read('profile-active', '')) || list[0] || NOBODY;
   const prefix = p => p.id ? `p:${p.id}:` : '';
   const lockOf = p => (p.id === '' && OWNER_LOCK) || p.lock || null;
   const token = p => 'signed-in:' + p.id;
   const session = { get: k => { try { return sessionStorage.getItem(k) ?? localStorage.getItem(k); } catch { return null; } }, set: (k, v, keep) => { try { sessionStorage.setItem(k, v); keep ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} }, drop: k => { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch {} }, kept: k => { try { return localStorage.getItem(k) !== null; } catch { return false; } } };
-  const proof = p => lockOf(p) ? lockOf(p).hash : 'yes';
+  const proof = p => lockOf(p) ? lockOf(p).hash : null;
   // Signed in means this browser holds the account's proof. Until then nothing of it is read or shown.
-  const signedIn = session.get(token(me)) === proof(me);
+  // Every account needs a passphrase; one without it must set one at the next sign-in.
+  const signedIn = me !== NOBODY && !!proof(me) && session.get(token(me)) === proof(me);
   const key = k => (signedIn ? prefix(me) : 'locked:') + k;
   const digest = async (pass, salt) => { const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveBits']); const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations: 150000 }, k, 256); return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join(''); };
   const makeLock = async pass => { const salt = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join(''); return { salt, hash: await digest(pass, salt) }; };
@@ -33,6 +40,17 @@ window.Profile = (() => {
   const el = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; return x; };
   const avatar = p => el('span', 'avatar avatar-' + (ACCENTS[p.accent] ? p.accent : 'amber'), (p.name.trim()[0] || '?').toUpperCase());
   const field = (type, placeholder, label, auto) => { const i = el('input'); i.type = type; i.placeholder = placeholder; i.setAttribute('aria-label', label); if (auto) i.autocomplete = auto; return i; };
+
+  // An exported account file carries the account's settings, data and passphrase lock.
+  async function importFile(file, note, keep) {
+    try {
+      const d = JSON.parse(await file.files[0].text()); if (d.kind !== 'my-site-profile' || !d.profile || typeof d.data !== 'object' || !d.profile.lock || !d.profile.lock.hash || !d.profile.lock.salt) throw 0;
+      const isOwner = d.profile.owner === true, p = { id: isOwner ? '' : Date.now().toString(36), name: String(d.profile.name || 'Imported').slice(0, 20), accent: ACCENTS[d.profile.accent] ? d.profile.accent : 'amber', classes: !!d.profile.classes, lock: { salt: String(d.profile.lock.salt), hash: String(d.profile.lock.hash) } };
+      if (isOwner) list = list.filter(x => x.id !== ''); list.push(p);
+      for (const k of OWN) if (d.data[k] !== undefined) write(prefix(p) + k, d.data[k]);
+      persist(); write('profile-active', p.id); session.drop(token(p)); location.reload();
+    } catch { note.textContent = 'That file isn’t an account exported from this site.'; }
+  }
 
   // ---- intro: what the site is, then sign in or create an account ----
   function intro() {
@@ -50,20 +68,26 @@ window.Profile = (() => {
       inTab.setAttribute('aria-pressed', 'true'); newTab.setAttribute('aria-pressed', 'false'); body.replaceChildren();
       const people = el('div', 'people');
       for (const p of list) { const b = el('button', 'person' + (p === chosen ? ' is-me' : '')); b.type = 'button'; b.append(avatar(p), el('span', '', p.name)); b.addEventListener('click', () => showSignIn(p)); people.append(b); }
-      const form = el('form', 'intro-form'), pass = field('password', 'Passphrase', `Passphrase for ${chosen.name}`, 'current-password'), ok = el('button', 'primary', `Sign in as ${chosen.name}`), msg = el('p', 'small lock-msg'), [keepLabel, keep] = keepRow(true);
-      ok.type = 'submit'; msg.setAttribute('role', 'status'); pass.hidden = !lockOf(chosen); pass.required = !!lockOf(chosen);
-      form.append(pass, keepLabel, ok, msg); body.append(el('p', 'intro-label', 'Accounts on this device'), people, form);
-      if (lockOf(chosen)) pass.focus();
+      const importRow = el('p', 'small intro-import'), imp = el('button', 'linkish', 'Import an account file'), file = el('input'); imp.type = 'button'; file.type = 'file'; file.accept = 'application/json,.json'; file.hidden = true;
+      imp.addEventListener('click', () => file.click()); importRow.append('Have an account on another device? ', imp, file);
+      if (!list.length) { const none = el('p', 'muted', 'No accounts on this device yet.'), go = el('button', 'primary', 'Create account'); go.type = 'button'; go.addEventListener('click', showCreate); const msg = el('p', 'small lock-msg'); body.append(none, go, importRow, msg); file.addEventListener('change', () => importFile(file, msg, true)); return; }
+      const fresh = !lockOf(chosen);
+      const form = el('form', 'intro-form'), pass = field('password', fresh ? 'Choose a passphrase' : 'Passphrase', `Passphrase for ${chosen.name}`, fresh ? 'new-password' : 'current-password'), ok = el('button', 'primary', fresh ? `Protect ${chosen.name} and sign in` : `Sign in as ${chosen.name}`), msg = el('p', 'small lock-msg'), [keepLabel, keep] = keepRow(true);
+      ok.type = 'submit'; msg.setAttribute('role', 'status'); pass.required = true;
+      if (fresh) form.append(el('p', 'small muted', 'This account has no passphrase yet. Choose one now (6 characters or more); you’ll need it to sign in from here on.'));
+      form.append(pass, keepLabel, ok, msg); body.append(el('p', 'intro-label', 'Accounts on this device'), people, form, importRow); pass.focus();
+      file.addEventListener('change', () => importFile(file, msg, true));
       form.addEventListener('submit', async e => {
-        e.preventDefault(); const lock = lockOf(chosen); if (!lock) return enter(chosen, keep.checked);
-        ok.disabled = true; let h = ''; try { h = await digest(pass.value, lock.salt); } catch {}
+        e.preventDefault(); ok.disabled = true;
+        if (fresh) { if (pass.value.length < 6) { ok.disabled = false; msg.textContent = 'Use at least 6 characters.'; return; } try { chosen.lock = await makeLock(pass.value); persist(); return enter(chosen, keep.checked); } catch { ok.disabled = false; msg.textContent = 'This browser can’t set a passphrase here.'; return; } }
+        const lock = lockOf(chosen); let h = ''; try { h = await digest(pass.value, lock.salt); } catch {}
         if (h === lock.hash) enter(chosen, keep.checked); else { ok.disabled = false; msg.textContent = 'That passphrase doesn’t match.'; pass.select(); }
       });
     }
     function showCreate() {
       inTab.setAttribute('aria-pressed', 'false'); newTab.setAttribute('aria-pressed', 'true'); body.replaceChildren();
-      const form = el('form', 'intro-form'), name = field('text', 'Your name', 'Your name', 'nickname'), pass = field('password', 'Passphrase (optional)', 'Passphrase, optional', 'new-password'), ok = el('button', 'primary', 'Create my account'), msg = el('p', 'small lock-msg'), [keepLabel, keep] = keepRow(true);
-      name.maxLength = 20; name.required = true; ok.type = 'submit';
+      const form = el('form', 'intro-form'), name = field('text', 'Your name', 'Your name', 'nickname'), pass = field('password', 'Passphrase (6 characters or more)', 'Passphrase', 'new-password'), ok = el('button', 'primary', 'Create my account'), msg = el('p', 'small lock-msg'), [keepLabel, keep] = keepRow(true);
+      name.maxLength = 20; name.required = true; pass.required = true; ok.type = 'submit';
       let accent = Object.keys(ACCENTS)[list.length % 5];
       const colours = el('div', 'swatches'); colours.setAttribute('role', 'group'); colours.setAttribute('aria-label', 'Colour');
       const paint = () => { for (const s of colours.children) s.setAttribute('aria-pressed', String(s.dataset.id === accent)); };
@@ -76,9 +100,9 @@ window.Profile = (() => {
       form.addEventListener('submit', async e => {
         e.preventDefault(); const n = name.value.trim(); if (!n) return;
         if (list.some(p => p.name.toLowerCase() === n.toLowerCase())) { msg.textContent = 'That name is already an account on this device.'; return; }
-        if (pass.value && pass.value.length < 4) { msg.textContent = 'Use at least 4 characters for a passphrase, or leave it empty.'; return; }
+        if (pass.value.length < 6) { msg.textContent = 'Use at least 6 characters for the passphrase.'; return; }
         const p = { id: Date.now().toString(36), name: n, accent, classes: false }; ok.disabled = true;
-        if (pass.value) { try { p.lock = await makeLock(pass.value); } catch { ok.disabled = false; msg.textContent = 'This browser can’t set a passphrase here. Leave it empty.'; return; } }
+        try { p.lock = await makeLock(pass.value); } catch { ok.disabled = false; msg.textContent = 'This browser can’t create accounts (it needs a secure https page).'; return; }
         const picked = STARTER_APPS.filter((_, i) => apps.children[i].getAttribute('aria-pressed') === 'true');
         if (picked.length) write(prefix(p) + 'dash-links-2', picked);
         list.push(p); persist(); enter(p, keep.checked);
@@ -86,7 +110,7 @@ window.Profile = (() => {
     }
     inTab.addEventListener('click', () => showSignIn()); newTab.addEventListener('click', showCreate);
     card.append(el('p', 'small muted intro-note', 'Accounts are saved in this browser only. Nothing is sent to a server.'));
-    root.append(pitch, card); document.body.append(root); showSignIn();
+    root.append(pitch, card); document.body.append(root); list.length ? showSignIn() : showCreate();
   }
   if (!signedIn) {
     document.documentElement.classList.add('locked');
@@ -111,9 +135,9 @@ window.Profile = (() => {
       for (const [id, label] of Object.entries(ACCENTS)) { const s = el('button', 'swatch avatar-' + id); s.type = 'button'; s.title = label; s.setAttribute('aria-label', label); s.setAttribute('aria-pressed', String(me.accent === id)); s.addEventListener('click', () => { me.accent = id; persist(); document.documentElement.dataset.accent = id; draw(); }); colours.append(s); }
       const cls = el('label', 'profile-check'), box = el('input'); box.type = 'checkbox'; box.checked = !!me.classes; cls.append(box, 'Show Sam’s class calendar on Home (week, tests, countdowns)'); box.addEventListener('change', () => { me.classes = box.checked; persist(); });
       const fixed = me.id === '' && OWNER_LOCK, has = !!lockOf(me);
-      const lockRow = el('div', 'profile-lock'), lp = field('password', has ? 'New passphrase' : 'Passphrase', 'Passphrase', 'new-password'), lb = el('button', '', has ? 'Change' : 'Set passphrase'), lr = el('button', 'linkish', 'Remove'), ln = el('p', 'small muted', fixed ? 'This account’s passphrase is built into the site and is the same on every device.' : has ? 'Signing in to this account asks for its passphrase.' : 'Optional. Signing in will ask for it. There is no reset if you forget it.');
-      lb.type = lr.type = 'button'; lr.hidden = !me.lock || !!fixed; lockRow.hidden = !!fixed;
-      lb.addEventListener('click', async () => { if (lp.value.length < 4) { ln.textContent = 'Use at least 4 characters.'; return; } try { const keep = session.kept(token(me)); me.lock = await makeLock(lp.value); persist(); session.set(token(me), me.lock.hash, keep); draw(); } catch { ln.textContent = 'This browser can’t set a passphrase here.'; } });
+      const lockRow = el('div', 'profile-lock'), lp = field('password', has ? 'New passphrase' : 'Passphrase', 'Passphrase', 'new-password'), lb = el('button', '', has ? 'Change' : 'Set passphrase'), lr = el('button', 'linkish', 'Remove'), ln = el('p', 'small muted', fixed ? 'This account’s passphrase is built into the site and is the same on every device.' : 'Signing in asks for this passphrase. There is no reset if you forget it.');
+      lb.type = lr.type = 'button'; lr.hidden = true; lockRow.hidden = !!fixed;
+      lb.addEventListener('click', async () => { if (lp.value.length < 6) { ln.textContent = 'Use at least 6 characters.'; return; } try { const keep = session.kept(token(me)); me.lock = await makeLock(lp.value); persist(); session.set(token(me), me.lock.hash, keep); draw(); } catch { ln.textContent = 'This browser can’t set a passphrase here.'; } });
       lr.addEventListener('click', () => { const keep = session.kept(token(me)); delete me.lock; persist(); session.set(token(me), 'yes', keep); draw(); });
       lockRow.append(lp, lb, lr);
       const done = el('button', 'primary', 'Save and reload'); done.type = 'button'; done.addEventListener('click', () => location.reload());
@@ -122,12 +146,12 @@ window.Profile = (() => {
       body.append(el('h3', 'eyebrow', 'Move or remove'));
       const tools = el('div', 'profile-tools'), exp = el('button', '', 'Export'), imp = el('button', '', 'Import'), file = el('input'), del = el('button', 'linkish', 'Delete this account');
       exp.type = imp.type = del.type = 'button'; file.type = 'file'; file.accept = 'application/json,.json'; file.hidden = true;
-      exp.addEventListener('click', () => { const data = { kind: 'my-site-profile', profile: { name: me.name, accent: me.accent, classes: !!me.classes }, data: Object.fromEntries(OWN.map(k => [k, read(key(k), null)]).filter(([, v]) => v !== null)) }; const a = el('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' })); a.download = `my-site-${me.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'account'}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
+      exp.addEventListener('click', () => { const data = { kind: 'my-site-profile', profile: { name: me.name, accent: me.accent, classes: !!me.classes, owner: me.id === '', lock: me.lock }, data: Object.fromEntries(OWN.map(k => [k, read(key(k), null)]).filter(([, v]) => v !== null)) }; const a = el('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' })); a.download = `my-site-${me.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'account'}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
       imp.addEventListener('click', () => file.click());
-      file.addEventListener('change', async () => { try { const d = JSON.parse(await file.files[0].text()); if (d.kind !== 'my-site-profile' || !d.profile || typeof d.data !== 'object') throw 0; const p = { id: Date.now().toString(36), name: String(d.profile.name || 'Imported').slice(0, 20), accent: ACCENTS[d.profile.accent] ? d.profile.accent : 'amber', classes: !!d.profile.classes }; list.push(p); for (const k of OWN) if (d.data[k] !== undefined) write(prefix(p) + k, d.data[k]); persist(); enter(p, session.kept(token(me))); } catch { note.textContent = 'That file isn’t an account exported from this site.'; } });
+      file.addEventListener('change', () => importFile(file, note));
       del.hidden = me.id === '';
       del.addEventListener('click', () => { if (del.dataset.sure !== '1') { del.dataset.sure = '1'; del.textContent = 'Really delete? Click again'; return; } for (const k of OWN) try { localStorage.removeItem(key(k)); } catch {} session.drop(token(me)); list = list.filter(p => p !== me); persist(); write('profile-active', ''); location.reload(); });
-      const note = el('p', 'small muted', 'Accounts are saved in this browser only. Export makes a file you can import on another device.');
+      const note = el('p', 'small muted', 'Accounts are saved in this browser only. Export makes a file you can import on another device; it signs in with the same passphrase.');
       tools.append(exp, imp, file, del); body.append(tools, note);
     };
     chip.addEventListener('click', () => { draw(); dialog.showModal(); });

@@ -212,3 +212,4 @@ button[type=submit]:hover,#download-offline:hover,.primary:hover,.button.primary
 @media(max-width:860px){.intro-points{display:none}.intro-pitch h1{font-size:23px;margin:0}.intro-brand{margin-bottom:12px;font-size:17px}.intro-pitch{padding:20px 20px 22px}}
 .intro-pitch>*{z-index:1}
 @media(max-width:860px){.intro{align-content:start}}
+.intro-import{margin:14px 0 0}.intro-body>.primary{width:100%;min-height:48px;font-size:16px}
