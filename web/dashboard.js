@@ -5,8 +5,9 @@
   const home = document.getElementById('home'); if (!home) return;
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; return x; };
-  const load = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; } };
-  const save = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
+  const P = window.Profile || { me: { name: '', classes: true }, key: k => k, isOwner: true };
+  const load = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(P.key(key))); return v ?? fallback; } catch { return fallback; } };
+  const save = (key, value) => { try { localStorage.setItem(P.key(key), JSON.stringify(value)); } catch {} };
   const now = new Date(), hour = now.getHours();
   const key = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
@@ -14,13 +15,16 @@
   const daysTo = k => Math.round((parse(k) - parse(todayKey)) / 86400000);
   const pretty = d => `${names[d.getDay()]} ${d.toLocaleDateString(undefined, { month: 'short' })} ${d.getDate()}`;
   const when = n => n === 0 ? 'today' : n === 1 ? 'tomorrow' : n < 0 ? `${-n}d late` : `in ${n} days`;
-  $('dash-greeting').textContent = hour < 5 ? 'Up late.' : hour < 12 ? 'Good morning.' : hour < 18 ? 'Good afternoon.' : 'Good evening.';
+  $('dash-greeting').textContent = (hour < 5 ? 'Up late' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + (P.me.name ? ', ' + P.me.name : '') + '.';
+  if (!P.isOwner) { const sub = home.querySelector('.hero-sub'); if (sub) sub.textContent = 'Your own apps, tasks, timer and notes on Sam’s site.'; }
   $('dash-date').textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
   // ---- apps ----
-  const DEFAULT_LINKS = [['Schoology', 'https://csisd.schoology.com/'], ['ClassLink', 'https://launchpad.classlink.com/csisd'], ['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Aniko', 'https://www.aniko.ai/'], ['AMC Trivial', 'https://amctrivial.com/'], ['USNCO quizzes', 'https://usnco-quizzes.web.app/'], ['Desmos', 'https://www.desmos.com/calculator'], ['Showdown', 'https://play.pokemonshowdown.com/'], ['GitHub', 'https://github.com/']];
+  const ALL_LINKS = [['Schoology', 'https://csisd.schoology.com/'], ['ClassLink', 'https://launchpad.classlink.com/csisd'], ['HAC', 'https://hac.csisd.org/homeaccess'], ['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Aniko', 'https://www.aniko.ai/'], ['AMC Trivial', 'https://amctrivial.com/'], ['USNCO quizzes', 'https://usnco-quizzes.web.app/'], ['Desmos', 'https://www.desmos.com/calculator'], ['Showdown', 'https://play.pokemonshowdown.com/'], ['GitHub', 'https://github.com/']];
   const safeUrl = u => { try { const x = new URL(u); return x.protocol === 'https:' || x.protocol === 'http:' ? x.href : null; } catch { return null; } };
+  const DEFAULT_LINKS = P.isOwner ? ALL_LINKS : ALL_LINKS.slice(3);
   let links = load('dash-links-2', null); if (!Array.isArray(links) || !links.length) links = DEFAULT_LINKS;
+  if (P.isOwner && !load('dash-links-hac', false)) { if (!links.some(([, u]) => /hac\.csisd\.org/.test(u))) { links = [...links]; links.splice(2, 0, ALL_LINKS[2]); } save('dash-links-hac', true); if (links !== DEFAULT_LINKS) save('dash-links-2', links); }
   // College Station ISD addresses replace the generic login pages in lists saved earlier.
   links = links.map(([n, u]) => u === 'https://app.schoology.com/login' ? [n, 'https://csisd.schoology.com/'] : u === 'https://launchpad.classlink.com/' ? [n, 'https://launchpad.classlink.com/csisd'] : [n, u]);
   const bar = $('dash-links'), editor = $('dash-editor'), rows = $('dash-rows');
@@ -44,7 +48,7 @@
   drawLinks();
 
   // ---- class calendar: every dated item from today on ----
-  const cal = window.SCHOOL_CALENDAR;
+  const cal = P.me.classes ? window.SCHOOL_CALENDAR : null;
   const important = /\b(tests?|quiz(zes)?|exams?|due|essays?|dbq|timed|final|presentations?|psat|sat day|act day)\b/i, off = /holiday|no school|break\b/i, exam = /\b(tests?|exams?|final|dbq|timed|psat)\b/i;
   const slug = c => c.toLowerCase().replace(/[^a-z]+/g, '-');
   const dates = cal ? Object.keys(cal.days).sort() : [], ahead = [];
@@ -60,8 +64,9 @@
     'Ask for the AP Lang spring calendar',
   ];
   let tasks = load('dash-tasks', null);
+  if (!Array.isArray(tasks) && !P.isOwner) tasks = [{ id: 'hello', text: 'Make this yours: edit My apps and add a task', due: '', done: false }];
   if (!Array.isArray(tasks)) { tasks = SEED.map((text, i) => ({ id: 'seed' + i, text, due: '', done: false })); const t = ahead.find(a => exam.test(a.item)); if (t) tasks.unshift({ id: 'seed-test', text: `Study for ${t.c}: ${t.item}`, due: t.k, done: false }); }
-  if (load('dash-tasks-v', 1) < 2) { tasks = tasks.filter(t => t.id !== 'seed3' || !/district/.test(t.text)); if (!tasks.some(t => /battlecode/i.test(t.text))) tasks.push({ id: 'seed-bc', text: 'Battlecode bot: run another improve-and-test loop', due: '', done: false }); save('dash-tasks-v', 2); save('dash-tasks', tasks); }
+  if (P.isOwner && load('dash-tasks-v', 1) < 2) { tasks = tasks.filter(t => t.id !== 'seed3' || !/district/.test(t.text)); if (!tasks.some(t => /battlecode/i.test(t.text))) tasks.push({ id: 'seed-bc', text: 'Battlecode bot: run another improve-and-test loop', due: '', done: false }); save('dash-tasks-v', 2); save('dash-tasks', tasks); }
   const taskList = $('task-list'), taskForm = $('task-form'), taskCount = $('task-count');
   const commit = () => { save('dash-tasks', tasks); drawTasks(); drawStats(); drawMini(); window.dispatchEvent(new Event('tasks-changed')); };
   const addTask = (text, due = '') => { tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: text.slice(0, 140), due, done: false }); commit(); };
@@ -130,14 +135,14 @@
   // ---- mini month ----
   const mini = $('dash-mini'); let miniMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   function drawMini() {
-    if (!mini || !cal) return;
+    if (!mini) return;
     $('mini-title').textContent = miniMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
     const due = new Set(tasks.filter(t => t.due && !t.done).map(t => t.due));
     mini.replaceChildren(...['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(n => el('span', 'mini-head', n)));
     const start = new Date(miniMonth); start.setDate(1 - ((start.getDay() + 6) % 7));
     const end = new Date(miniMonth.getFullYear(), miniMonth.getMonth() + 1, 0);
     for (let d = start; d <= end || d.getDay() !== 1; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
-      const k = key(d), day = cal.days[k] || {}, b = el('button', 'mini-day', String(d.getDate())); b.type = 'button';
+      const k = key(d), day = cal?.days[k] || {}, b = el('button', 'mini-day', String(d.getDate())); b.type = 'button';
       if (d.getMonth() !== miniMonth.getMonth()) b.classList.add('mini-out');
       if (k === todayKey) b.classList.add('mini-today');
       const items = Object.values(day).flat();
@@ -216,6 +221,28 @@
     $('timer-plus').addEventListener('click', () => { left += 300; total = Math.max(total, left); if (tick) endAt += 300000; show(); });
     $('timer-skip').addEventListener('click', () => setMode(mode === 'focus' ? 'rest' : 'focus'));
     show();
+  }
+
+  // ---- grades: typed in by hand (HAC has no way for a public site to read them) ----
+  const gradeList = $('grade-list');
+  if (gradeList) {
+    let grades = load('dash-grades', null); if (!Array.isArray(grades)) grades = P.isOwner ? [['AP Chem', ''], ['AP Lang', ''], ['AP World', '']] : [['', '']];
+    const letter = n => n >= 90 ? 'A' : n >= 80 ? 'B' : n >= 70 ? 'C' : 'F';
+    const sum = () => { const ns = grades.map(g => parseFloat(g[1])).filter(n => isFinite(n)); $('grade-avg').textContent = ns.length ? `avg ${(ns.reduce((a, b) => a + b, 0) / ns.length).toFixed(1)}` : ''; };
+    const drawGrades = () => {
+      gradeList.replaceChildren(...grades.map(g => {
+        const li = el('li', 'grade'), name = el('input'), num = el('input'), tag = el('span', 'grade-tag'), x = el('button', 'task-x', '×');
+        name.type = 'text'; name.value = g[0]; name.placeholder = 'Class'; name.maxLength = 30; name.setAttribute('aria-label', 'Class name');
+        num.type = 'number'; num.value = g[1]; num.placeholder = '–'; num.min = 0; num.max = 120; num.step = 'any'; num.inputMode = 'decimal'; num.setAttribute('aria-label', 'Grade for ' + (g[0] || 'class'));
+        const paint = () => { const n = parseFloat(num.value); tag.textContent = isFinite(n) ? letter(n) : ''; tag.className = 'grade-tag' + (isFinite(n) ? ' g-' + letter(n) : ''); };
+        name.addEventListener('input', () => { g[0] = name.value; save('dash-grades', grades); });
+        num.addEventListener('input', () => { g[1] = num.value; save('dash-grades', grades); paint(); sum(); });
+        x.type = 'button'; x.setAttribute('aria-label', 'Remove ' + (g[0] || 'class')); x.addEventListener('click', () => { grades = grades.filter(o => o !== g); save('dash-grades', grades); drawGrades(); });
+        paint(); li.append(name, num, tag, x); return li;
+      })); sum();
+    };
+    $('grade-add').addEventListener('click', () => { grades.push(['', '']); save('dash-grades', grades); drawGrades(); gradeList.lastChild?.querySelector('input')?.focus(); });
+    drawGrades();
   }
 
   // ---- scratch pad ----

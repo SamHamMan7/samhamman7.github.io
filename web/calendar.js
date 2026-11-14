@@ -24,7 +24,7 @@
   let view = read('calendar-view', 'month') === 'week' ? 'week' : 'month';
   let selected = clampDay(new Date());
   let cursor = new Date(selected.getFullYear(), selected.getMonth(), 1);
-  const tasksByDay = () => { const map = {}; for (const t of read('dash-tasks', []) || []) if (t && t.due && !t.done) (map[t.due] ||= []).push(t.text); return map; };
+  const tasksByDay = () => { const map = {}; for (const t of read((window.Profile?.key || (k => k))('dash-tasks'), []) || []) if (t && t.due && !t.done) (map[t.due] ||= []).push(t.text); return map; };
 
   const title = $('calendar-title'), grid = $('calendar-grid'), filters = $('calendar-filters'), upcoming = $('calendar-upcoming');
   const prev = $('calendar-prev'), next = $('calendar-next'), dayTitle = $('calendar-day-title'), dayBody = $('calendar-day-body');
