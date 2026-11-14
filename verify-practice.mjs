@@ -35,9 +35,9 @@ assert.equal(problems.length,16);assert.equal(new Set(problems.map(p=>p.id)).siz
 for(const p of problems){const raw=p.choices?.[p.answer];const value=p.set==='AIME'?p.answer:raw.includes('/')?raw.split('/').map(Number).reduce((a,b)=>a/b):Number(raw);assert.ok(Math.abs(value-answers.get(p.id))<1e-10,p.id);if(p.set==='AIME')assert.ok(Number.isInteger(p.answer)&&p.answer>=0&&p.answer<=999);}
 console.log('Verified all 16 answer keys using independent calculations and enumeration.');
 
-// Study help: structure only. Every numeric key is re-derived by build-study.py when the file is generated.
-vm.runInNewContext(fs.readFileSync('web/study-problems.js','utf8'),context);
-const study=context.window.STUDY_PROBLEMS,notes=context.window.STUDY_TOPICS;
-assert.ok(study.length>=30);assert.equal(new Set(study.map(p=>p.id)).size,study.length);
-for(const p of study){assert.ok(Number.isInteger(p.answer)&&p.answer>=0&&p.answer<4&&p.choices.length===4&&new Set(p.choices).size===4,p.id);assert.ok(notes[p.subject]?.length,p.id);for(const k of ['title','statement','hint','solution','topic'])assert.ok(p[k]&&p[k].length>3,p.id+' '+k);assert.ok(p.solution.endsWith('Answer: '+'ABCD'[p.answer]+'.'),p.id+' solution letter');}
-console.log(`Checked ${study.length} study questions.`);
+// Study notes and sources: structure only.
+vm.runInNewContext(fs.readFileSync('web/study-notes.js','utf8'),context);
+const notes=context.window.STUDY_NOTES,sources=context.window.STUDY_SOURCES;
+assert.ok(Object.keys(notes).length>=4&&Object.values(notes).every(xs=>xs.length>=3&&xs.every(x=>typeof x==='string'&&x.length>10)));
+for(const list of Object.values(sources))for(const [name,url,blurb] of list){assert.ok(name&&blurb);assert.equal(new URL(url).protocol,'https:');}
+console.log('Checked study notes and sources.');

@@ -11,12 +11,13 @@
   $('dash-date').textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
   // ---- quick links ----
-  const DEFAULT_LINKS = [['Schoology', 'https://app.schoology.com/login'], ['ClassLink', 'https://launchpad.classlink.com/'], ['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Discord', 'https://discord.com/app'], ['Aniko', 'https://www.aniko.ai/']];
+  const DEFAULT_LINKS = [['Schoology', 'https://app.schoology.com/login'], ['ClassLink', 'https://launchpad.classlink.com/'], ['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Aniko', 'https://www.aniko.ai/']];
   const safeUrl = u => { try { const x = new URL(u); return x.protocol === 'https:' || x.protocol === 'http:' ? x.href : null; } catch { return null; } };
   let links = load('dash-links', null); if (!Array.isArray(links) || !links.length) links = DEFAULT_LINKS;
-  const bar = $('dash-links'), editor = $('dash-editor'), rows = $('dash-rows'), serverInput = $('dash-discord-id');
+  links = links.filter(([n, u]) => !/discord\.com/i.test(String(u)));
+  const bar = $('dash-links'), editor = $('dash-editor'), rows = $('dash-rows');
   function drawLinks() {
-    bar.replaceChildren(...links.filter(([n, u]) => n && safeUrl(u)).map(([name, url]) => { const a = el('a', 'chip', name); a.href = safeUrl(url); a.target = '_blank'; a.rel = 'noopener'; return a; }));
+    bar.replaceChildren(...links.filter(([n, u]) => n && safeUrl(u)).map(([name, url]) => { const a = el('a', 'app'); a.href = safeUrl(url); a.target = '_blank'; a.rel = 'noopener'; a.append(window.SiteIcons.tile(name), el('span', 'app-name', name)); return a; }));
   }
   function row(name = '', url = '') {
     const r = el('div', 'dash-row'), n = el('input'), u = el('input'), x = el('button', 'linkish', 'Remove');
@@ -26,7 +27,7 @@
   }
   $('dash-edit').addEventListener('click', () => {
     editor.hidden = !editor.hidden; if (editor.hidden) return;
-    rows.replaceChildren(...links.map(([n, u]) => row(n, u))); serverInput.value = load('dash-discord', '') || '';
+    rows.replaceChildren(...links.map(([n, u]) => row(n, u)));
   });
   $('dash-add').addEventListener('click', () => rows.append(row()));
   $('dash-reset').addEventListener('click', () => { rows.replaceChildren(...DEFAULT_LINKS.map(([n, u]) => row(n, u))); });
@@ -34,8 +35,7 @@
     event.preventDefault();
     const next = [...rows.children].map(r => { const [n, u] = r.querySelectorAll('input'); return [n.value.trim(), u.value.trim()]; }).filter(([n, u]) => n && safeUrl(u));
     links = next.length ? next : DEFAULT_LINKS; save('dash-links', links);
-    const id = serverInput.value.trim(); save('dash-discord', /^\d{17,20}$/.test(id) ? id : '');
-    editor.hidden = true; drawLinks(); drawDiscord();
+    editor.hidden = true; drawLinks();
   });
   drawLinks();
 
@@ -71,30 +71,13 @@
     if (!count) upcoming.append(el('li', 'muted', 'Nothing coming up.'));
   }
 
-  // ---- study progress ----
-  const problems = window.STUDY_PROBLEMS || [], bars = $('dash-study');
-  function drawStudy() {
-    const solved = new Set(load('study-solved', []));
-    bars.replaceChildren(...[...new Set(problems.map(p => p.subject))].map(section => {
-      const all = problems.filter(p => p.subject === section), done = all.filter(p => solved.has(p.id)).length, r = el('div', 'dash-bar'), meter = el('progress');
-      meter.max = all.length; meter.value = done; meter.setAttribute('aria-label', section + ' solved');
-      r.append(el('span', 'dash-bar-name', section), meter, el('span', 'small muted', `${done}/${all.length}`)); return r;
-    }));
+  // ---- today's focus: one Chem Olympiad section a day, in rotation ----
+  const notes = window.STUDY_NOTES || {}, sections = Object.keys(notes), focus = $('dash-focus');
+  if (sections.length && focus) {
+    const day = Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(now.getFullYear(), 0, 0)) / 86400000), name = sections[day % sections.length];
+    focus.append(el('p', 'focus-name', name)); const list = el('ul', 'focus-list');
+    for (const idea of notes[name].slice(0, 3)) list.append(el('li', '', idea));
+    const go = el('a', 'button primary', 'Practice it'); go.href = (window.STUDY_SOURCES?.chem?.[0] || [])[1] || '#study'; go.target = '_blank'; go.rel = 'noopener';
+    const more = el('a', '', 'All key ideas'); more.href = '#study'; const actions = el('p', 'focus-actions'); actions.append(go, more); focus.append(list, actions);
   }
-  drawStudy(); window.addEventListener('hashchange', drawStudy);
-
-  // ---- Discord: the official server widget is the only part of Discord that can be embedded ----
-  function drawDiscord() {
-    const box = $('dash-discord'), id = load('dash-discord', ''); box.replaceChildren();
-    if (/^\d{17,20}$/.test(id)) {
-      const frame = el('iframe', 'dash-discord-frame'); frame.title = 'Discord server';
-      frame.src = `https://discord.com/widget?id=${id}&theme=${matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'}`;
-      frame.setAttribute('sandbox', 'allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts'); frame.loading = 'lazy'; box.append(frame);
-    } else {
-      const p = el('p', 'small muted'); p.append('Discord itself can’t run inside another page, but a server’s widget can. Turn on the widget in Server Settings, then add the server ID under ');
-      const b = el('button', 'linkish', 'Edit links'); b.type = 'button'; b.addEventListener('click', () => $('dash-edit').click()); p.append(b, ' to see who’s online here.');
-      const a = el('a', 'chip', 'Open Discord'); a.href = 'https://discord.com/app'; a.target = '_blank'; a.rel = 'noopener'; box.append(a, p);
-    }
-  }
-  drawDiscord();
 })();
