@@ -48,7 +48,7 @@ weights are hosted.
 bundles the pinned Showdown simulator (base + champions data only) and the same
 stable search Discharge uses on vgc.bot. "Very Strong" is that search (about
 1-3 s per turn); Medium/Strong use the quick lookahead. The worker is prebuilt
-from bot commit `c7a23a7` with `node scripts/build-champions-browser.mjs`
+from bot commit `5e8e9e8` with `node scripts/build-champions-browser.mjs`
 (CI has no pinned simulator), committed as `web/champions.worker.js`, and its
 SHA-256 is checked in `bot-updates/current.json`. Its source is in the overlay
 archive and the source download.
