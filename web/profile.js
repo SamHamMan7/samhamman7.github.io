@@ -6,10 +6,11 @@ window.Profile = (() => {
   const read = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
   const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
   const OWN = ['dash-links-2', 'dash-tasks', 'dash-tasks-v', 'dash-notes', 'dash-timer', 'dash-focus-tally', 'dash-grades', 'dash-grades-at', 'hac-user'];
-  const ACCENTS = { amber: 'Amber', coral: 'Coral', mint: 'Mint', sky: 'Sky', violet: 'Violet' };
+  const ACCENTS = { amber: 'Amber', coral: 'Coral', rose: 'Rose', mint: 'Mint', sky: 'Sky', violet: 'Violet', slate: 'Slate' };
+  const MODES = { auto: 'Auto', light: 'Light', dark: 'Dark' };
   // Set to {salt, hash} to make Sam's passphrase the same on every device (see profile dialog).
   const OWNER_LOCK = null;
-  const STARTER_APPS = [['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Gmail', 'https://mail.google.com/'], ['Google Drive', 'https://drive.google.com/'], ['Classroom', 'https://classroom.google.com/'], ['YouTube', 'https://www.youtube.com/'], ['Desmos', 'https://www.desmos.com/calculator'], ['Khan Academy', 'https://www.khanacademy.org/'], ['Quizlet', 'https://quizlet.com/'], ['AMC Trivial', 'https://amctrivial.com/'], ['USNCO quizzes', 'https://usnco-quizzes.web.app/'], ['Showdown', 'https://play.pokemonshowdown.com/'], ['GitHub', 'https://github.com/'], ['Aniko', 'https://www.aniko.ai/']];
+  const STARTER_APPS = [['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Gmail', 'https://mail.google.com/'], ['Google Drive', 'https://drive.google.com/'], ['Classroom', 'https://classroom.google.com/'], ['YouTube', 'https://www.youtube.com/'], ['Desmos', 'https://www.desmos.com/calculator'], ['Khan Academy', 'https://www.khanacademy.org/'], ['Quizlet', 'https://quizlet.com/'], ['AMC Trivial', 'https://amctrivial.com/'], ['USNCO quizzes', 'https://usnco-quizzes.web.app/'], ['Wikipedia', 'https://www.wikipedia.org/'], ['GitHub', 'https://github.com/'], ['Aniko', 'https://www.aniko.ai/']];
   let list = read('profiles', null); if (!Array.isArray(list)) list = [];
   // Sam's account is only offered in a browser that already holds it: one where it has a
   // passphrase, or where Sam's dashboard was used before accounts existed. Everywhere else it
@@ -34,7 +35,10 @@ window.Profile = (() => {
   const persist = () => write('profiles', list);
   const enter = (p, keep) => { session.set(token(p), proof(p), keep); write('profile-active', p.id); location.reload(); };
   const signOut = () => { session.drop(token(me)); location.reload(); };
-  document.documentElement.dataset.accent = signedIn && ACCENTS[me.accent] ? me.accent : 'amber';
+  // Before sign-in the intro uses the look last picked on this device.
+  const look = signedIn ? { accent: me.accent, mode: me.mode } : read('intro-look', {});
+  const applyLook = l => { document.documentElement.dataset.accent = ACCENTS[l.accent] ? l.accent : 'amber'; if (MODES[l.mode] && l.mode !== 'auto') document.documentElement.dataset.mode = l.mode; else delete document.documentElement.dataset.mode; };
+  applyLook(look);
   if (signedIn && !me.classes) document.documentElement.classList.add('no-classes');
 
   const el = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; return x; };
@@ -45,7 +49,7 @@ window.Profile = (() => {
   async function importFile(file, note, keep) {
     try {
       const d = JSON.parse(await file.files[0].text()); if (d.kind !== 'my-site-profile' || !d.profile || typeof d.data !== 'object' || !d.profile.lock || !d.profile.lock.hash || !d.profile.lock.salt) throw 0;
-      const isOwner = d.profile.owner === true, p = { id: isOwner ? '' : Date.now().toString(36), name: String(d.profile.name || 'Imported').slice(0, 20), accent: ACCENTS[d.profile.accent] ? d.profile.accent : 'amber', classes: !!d.profile.classes, lock: { salt: String(d.profile.lock.salt), hash: String(d.profile.lock.hash) } };
+      const isOwner = d.profile.owner === true, p = { id: isOwner ? '' : Date.now().toString(36), name: String(d.profile.name || 'Imported').slice(0, 20), accent: ACCENTS[d.profile.accent] ? d.profile.accent : 'amber', mode: MODES[d.profile.mode] ? d.profile.mode : 'auto', classes: !!d.profile.classes, lock: { salt: String(d.profile.lock.salt), hash: String(d.profile.lock.hash) } };
       if (isOwner) list = list.filter(x => x.id !== ''); list.push(p);
       for (const k of OWN) if (d.data[k] !== undefined) write(prefix(p) + k, d.data[k]);
       persist(); write('profile-active', p.id); session.drop(token(p)); location.reload();
@@ -56,10 +60,17 @@ window.Profile = (() => {
   function intro() {
     const icon = n => window.SiteIcons ? window.SiteIcons.svg(n) : '';
     const root = el('div', 'intro'), pitch = el('div', 'intro-pitch'), card = el('div', 'intro-card');
-    pitch.append(el('p', 'intro-brand', 'my site'), el('h1', '', 'Battle a Pokémon bot, practice for contests, and run your day from one page.'));
+    pitch.append(el('p', 'intro-brand', 'my site'), el('h1', '', 'One page for your whole day.'), el('p', 'intro-sub', 'Your apps, tasks, calendar, focus timer and grades in one place, in the look you like. Practice and games are a tab away when you want them.'));
     const points = el('ul', 'intro-points');
-    for (const [i, title, text] of [['gamepad', 'Pokémon Showdown bot', 'Champions VGC doubles and more, with a rating that follows you.'], ['flask', 'Practice', 'Live problems from USNCO quizzes and AMC Trivial.'], ['check', 'Your own dashboard', 'Apps, tasks, a focus timer, grades and notes, in your colour.'], ['calendar', 'Calendar', 'A month view with your tasks on it.']]) { const li = el('li'), b = el('span', 'intro-icon'); b.innerHTML = icon(i); const t = el('span'); t.append(el('strong', '', title), el('span', '', text)); li.append(b, t); points.append(li); }
+    for (const [i, title, text] of [['grid', 'Everything you open, one tap away', 'Pick your apps and they sit at the top with their own icons.'], ['check', 'Tasks and a calendar that talk to each other', 'Give a task a date and it shows up on the month view.'], ['timer', 'Focus timer and grades', 'Timed focus sessions with breaks, and your class averages beside them.'], ['flask', 'Practice and games', 'Live practice problems, plus a few games for the break.']]) { const li = el('li'), b = el('span', 'intro-icon'); b.innerHTML = icon(i); const t = el('span'); t.append(el('strong', '', title), el('span', '', text)); li.append(b, t); points.append(li); }
     pitch.append(points);
+    // Try the looks before signing in; the choice carries into a new account.
+    const chosen = { accent: ACCENTS[look.accent] ? look.accent : 'amber', mode: MODES[look.mode] ? look.mode : 'auto' };
+    const themes = el('div', 'intro-themes'), modes = el('div', 'seg'); themes.append(el('span', '', 'Try a look'));
+    const repaint = () => { for (const x of [...pitch.querySelectorAll('.swatch'), ...card.querySelectorAll('.swatch')]) x.setAttribute('aria-pressed', String(x.dataset.id === chosen.accent)); for (const x of modes.children) x.setAttribute('aria-pressed', String(x.dataset.id === chosen.mode)); applyLook(chosen); write('intro-look', chosen); };
+    for (const [id, label] of Object.entries(ACCENTS)) { const x = el('button', 'swatch avatar-' + id); x.type = 'button'; x.dataset.id = id; x.title = label; x.setAttribute('aria-label', label + ' colour'); x.addEventListener('click', () => { chosen.accent = id; repaint(); }); themes.append(x); }
+    for (const [id, label] of Object.entries(MODES)) { const x = el('button', '', label); x.type = 'button'; x.dataset.id = id; x.addEventListener('click', () => { chosen.mode = id; repaint(); }); modes.append(x); }
+    modes.setAttribute('role', 'group'); modes.setAttribute('aria-label', 'Light or dark'); themes.append(modes); pitch.append(themes); repaint();
     const tabs = el('div', 'seg intro-tabs'), inTab = el('button', '', 'Sign in'), newTab = el('button', '', 'Create account'), body = el('div', 'intro-body');
     inTab.type = newTab.type = 'button'; tabs.append(inTab, newTab); card.append(tabs, body);
     const keepRow = checked => { const l = el('label', 'profile-check'), c = el('input'); c.type = 'checkbox'; c.checked = checked; l.append(c, 'Keep me signed in on this device'); return [l, c]; };
@@ -88,20 +99,17 @@ window.Profile = (() => {
       inTab.setAttribute('aria-pressed', 'false'); newTab.setAttribute('aria-pressed', 'true'); body.replaceChildren();
       const form = el('form', 'intro-form'), name = field('text', 'Your name', 'Your name', 'nickname'), pass = field('password', 'Passphrase (6 characters or more)', 'Passphrase', 'new-password'), ok = el('button', 'primary', 'Create my account'), msg = el('p', 'small lock-msg'), [keepLabel, keep] = keepRow(true);
       name.maxLength = 20; name.required = true; pass.required = true; ok.type = 'submit';
-      let accent = Object.keys(ACCENTS)[list.length % 5];
       const colours = el('div', 'swatches'); colours.setAttribute('role', 'group'); colours.setAttribute('aria-label', 'Colour');
-      const paint = () => { for (const s of colours.children) s.setAttribute('aria-pressed', String(s.dataset.id === accent)); };
-      for (const [id, label] of Object.entries(ACCENTS)) { const s = el('button', 'swatch avatar-' + id); s.type = 'button'; s.dataset.id = id; s.title = label; s.setAttribute('aria-label', label); s.addEventListener('click', () => { accent = id; paint(); }); colours.append(s); }
-      paint();
+      for (const [id, label] of Object.entries(ACCENTS)) { const x = el('button', 'swatch avatar-' + id); x.type = 'button'; x.dataset.id = id; x.title = label; x.setAttribute('aria-label', label); x.addEventListener('click', () => { chosen.accent = id; repaint(); }); colours.append(x); }
       const apps = el('div', 'intro-apps'); apps.setAttribute('role', 'group'); apps.setAttribute('aria-label', 'Starter apps');
       for (const [i, [n]] of STARTER_APPS.entries()) { const b = el('button', 'pill', n); b.type = 'button'; b.setAttribute('aria-pressed', String(i < 2 || [6, 9, 11].includes(i))); b.addEventListener('click', () => b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'))); apps.append(b); }
       form.append(name, pass, el('p', 'intro-label', 'Colour'), colours, el('p', 'intro-label', 'Apps to start with (you can change these later)'), apps, keepLabel, ok, msg);
-      body.append(form); name.focus();
+      body.append(form); repaint(); name.focus();
       form.addEventListener('submit', async e => {
         e.preventDefault(); const n = name.value.trim(); if (!n) return;
         if (list.some(p => p.name.toLowerCase() === n.toLowerCase())) { msg.textContent = 'That name is already an account on this device.'; return; }
         if (pass.value.length < 6) { msg.textContent = 'Use at least 6 characters for the passphrase.'; return; }
-        const p = { id: Date.now().toString(36), name: n, accent, classes: false }; ok.disabled = true;
+        const p = { id: Date.now().toString(36), name: n, accent: chosen.accent, mode: chosen.mode, classes: false }; ok.disabled = true;
         try { p.lock = await makeLock(pass.value); } catch { ok.disabled = false; msg.textContent = 'This browser can’t create accounts (it needs a secure https page).'; return; }
         const picked = STARTER_APPS.filter((_, i) => apps.children[i].getAttribute('aria-pressed') === 'true');
         if (picked.length) write(prefix(p) + 'dash-links-2', picked);
@@ -133,6 +141,9 @@ window.Profile = (() => {
       const nameRow = el('label', 'profile-field'), nm = el('input'); nm.type = 'text'; nm.value = me.name; nm.maxLength = 20; nameRow.append('Name', nm); nm.addEventListener('change', () => { if (nm.value.trim()) { me.name = nm.value.trim(); persist(); } });
       const colours = el('div', 'swatches'); colours.setAttribute('role', 'group'); colours.setAttribute('aria-label', 'Colour');
       for (const [id, label] of Object.entries(ACCENTS)) { const s = el('button', 'swatch avatar-' + id); s.type = 'button'; s.title = label; s.setAttribute('aria-label', label); s.setAttribute('aria-pressed', String(me.accent === id)); s.addEventListener('click', () => { me.accent = id; persist(); document.documentElement.dataset.accent = id; draw(); }); colours.append(s); }
+      const modeRow = el('div', 'mode-row'), modeSeg = el('div', 'seg'); modeSeg.setAttribute('role', 'group'); modeSeg.setAttribute('aria-label', 'Light or dark');
+      for (const [id, label] of Object.entries(MODES)) { const b = el('button', '', label); b.type = 'button'; b.setAttribute('aria-pressed', String((me.mode || 'auto') === id)); b.addEventListener('click', () => { me.mode = id; persist(); applyLook(me); draw(); }); modeSeg.append(b); }
+      modeRow.append('Mode', modeSeg);
       const cls = el('label', 'profile-check'), box = el('input'); box.type = 'checkbox'; box.checked = !!me.classes; cls.append(box, 'Show Sam’s class calendar on Home (week, tests, countdowns)'); box.addEventListener('change', () => { me.classes = box.checked; persist(); });
       const fixed = me.id === '' && OWNER_LOCK, has = !!lockOf(me);
       const lockRow = el('div', 'profile-lock'), lp = field('password', has ? 'New passphrase' : 'Passphrase', 'Passphrase', 'new-password'), lb = el('button', '', has ? 'Change' : 'Set passphrase'), lr = el('button', 'linkish', 'Remove'), ln = el('p', 'small muted', fixed ? 'This account’s passphrase is built into the site and is the same on every device.' : 'Signing in asks for this passphrase. There is no reset if you forget it.');
@@ -141,12 +152,12 @@ window.Profile = (() => {
       lr.addEventListener('click', () => { const keep = session.kept(token(me)); delete me.lock; persist(); session.set(token(me), 'yes', keep); draw(); });
       lockRow.append(lp, lb, lr);
       const done = el('button', 'primary', 'Save and reload'); done.type = 'button'; done.addEventListener('click', () => location.reload());
-      body.append(nameRow, colours, cls, lockRow, ln, done);
+      body.append(nameRow, colours, modeRow, cls, lockRow, ln, done);
 
       body.append(el('h3', 'eyebrow', 'Move or remove'));
       const tools = el('div', 'profile-tools'), exp = el('button', '', 'Export'), imp = el('button', '', 'Import'), file = el('input'), del = el('button', 'linkish', 'Delete this account');
       exp.type = imp.type = del.type = 'button'; file.type = 'file'; file.accept = 'application/json,.json'; file.hidden = true;
-      exp.addEventListener('click', () => { const data = { kind: 'my-site-profile', profile: { name: me.name, accent: me.accent, classes: !!me.classes, owner: me.id === '', lock: me.lock }, data: Object.fromEntries(OWN.map(k => [k, read(key(k), null)]).filter(([, v]) => v !== null)) }; const a = el('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' })); a.download = `my-site-${me.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'account'}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
+      exp.addEventListener('click', () => { const data = { kind: 'my-site-profile', profile: { name: me.name, accent: me.accent, mode: me.mode, classes: !!me.classes, owner: me.id === '', lock: me.lock }, data: Object.fromEntries(OWN.map(k => [k, read(key(k), null)]).filter(([, v]) => v !== null)) }; const a = el('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' })); a.download = `my-site-${me.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'account'}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
       imp.addEventListener('click', () => file.click());
       file.addEventListener('change', () => importFile(file, note));
       del.hidden = me.id === '';

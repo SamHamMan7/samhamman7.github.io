@@ -16,13 +16,13 @@
   const pretty = d => `${names[d.getDay()]} ${d.toLocaleDateString(undefined, { month: 'short' })} ${d.getDate()}`;
   const when = n => n === 0 ? 'today' : n === 1 ? 'tomorrow' : n < 0 ? `${-n}d late` : `in ${n} days`;
   $('dash-greeting').textContent = (hour < 5 ? 'Up late' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + (P.me.name ? ', ' + P.me.name : '') + '.';
-  if (!P.isOwner) { const sub = home.querySelector('.hero-sub'); if (sub) sub.textContent = 'Your own apps, tasks, timer and notes on Sam’s site.'; }
+  if (!P.isOwner) { const sub = home.querySelector('.hero-sub'); if (sub) sub.textContent = 'Your apps, tasks, timer and notes, all in one place.'; }
   $('dash-date').textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
   // ---- apps ----
   const ALL_LINKS = [['Schoology', 'https://csisd.schoology.com/'], ['ClassLink', 'https://launchpad.classlink.com/csisd'], ['HAC', 'https://hac.csisd.org/homeaccess'], ['Claude', 'https://claude.ai/'], ['ChatGPT', 'https://chatgpt.com/'], ['Aniko', 'https://www.aniko.ai/'], ['AMC Trivial', 'https://amctrivial.com/'], ['USNCO quizzes', 'https://usnco-quizzes.web.app/'], ['Desmos', 'https://www.desmos.com/calculator'], ['Showdown', 'https://play.pokemonshowdown.com/'], ['GitHub', 'https://github.com/']];
   const safeUrl = u => { try { const x = new URL(u); return x.protocol === 'https:' || x.protocol === 'http:' ? x.href : null; } catch { return null; } };
-  const DEFAULT_LINKS = P.isOwner ? ALL_LINKS : ALL_LINKS.slice(3);
+  const DEFAULT_LINKS = P.isOwner ? ALL_LINKS : ALL_LINKS.slice(3).filter(([n]) => n !== 'Showdown');
   let links = load('dash-links-2', null); if (!Array.isArray(links) || !links.length) links = DEFAULT_LINKS;
   if (P.isOwner && !load('dash-links-hac', false)) { if (!links.some(([, u]) => /hac\.csisd\.org/.test(u))) { links = [...links]; links.splice(2, 0, ALL_LINKS[2]); } save('dash-links-hac', true); if (links !== DEFAULT_LINKS) save('dash-links-2', links); }
   // College Station ISD addresses replace the generic login pages in lists saved earlier.
