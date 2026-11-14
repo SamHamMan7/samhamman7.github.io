@@ -25,7 +25,10 @@
   const status = document.getElementById('download-status');
   const progress = document.getElementById('download-progress');
   let registration, manifest, downloading = false;
-  function show(message) { status.textContent = message; }
+  // The offline panel only takes space while there is something to do: it hides once the
+  // games are saved, and comes back if the browser ever clears them.
+  const panel = button.closest('.panel');
+  function show(message) { status.textContent = message; if (panel) panel.hidden = false; }
   function rpc(worker, type) {
     return new Promise((resolve, reject) => {
       const channel = new MessageChannel();
@@ -50,6 +53,7 @@
     downloading = false; button.disabled = false; progress.hidden = true;
     button.firstChild.textContent = 'Check offline download ';
     show('Ready for offline. The game and sprites are saved on this device.');
+    if (panel) panel.hidden = true;
   }
   async function init() {
     if (!('serviceWorker' in navigator)) { button.disabled = true; show('Offline saving is unavailable in this browser. You can still play while online.'); return; }
