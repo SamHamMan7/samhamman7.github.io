@@ -1,6 +1,6 @@
 {
-  "archive": "bot-updates/4a976fe.zip",
-  "sha256": "c6eeb460bbdd67790f8f89081f98a8484b494bc8deae44565ec749638c15f3ee",
+  "archive": "bot-updates/4a976fe-rated-default.zip",
+  "sha256": "d6ab0132ab2d99eaf3395f3b01fd7626afe6a30681647f42f6039afc00aa3401",
   "botUpdate": {
     "sourceCommit": "4a976fe",
     "updated": "2026-11-14",
@@ -8,7 +8,7 @@
     "otherFormats": "unchanged stable singles/doubles controllers",
     "browserAdapter": "static sprites, move animations on, silent",
     "championsArena": "Champions VGC runs in a browser worker using the stable Discharge search (native-reply-control) for Very Strong",
-    "ratedPlay": "AI level \"Rated\" keeps a per-format rating in the browser and picks Medium, Strong or Very Strong from it",
+    "ratedPlay": "Games are rated by default (per-format rating in the browser picks Medium, Strong or Very Strong); the game-type picker offers unrated levels",
     "variety": "Champions bot goes through its whole team pool in a shuffled order before repeating, remixes sets only with moves, items and abilities that published teams gave the same species, and samples wider among near-best moves",
     "switching": "Very Strong pays a small search cost for switching, larger for consecutive switches and for cycling a Pokemon back in or out"
   },
