@@ -241,6 +241,28 @@
         paint(); li.append(name, num, tag, x); return li;
       })); sum();
     };
+    // ---- HAC sync through a small reader the site owner runs (see hac-worker/README.md) ----
+    const hacForm = $('hac-form'), hacMsg = $('hac-msg'), hacUrl = $('hac-url'), hacUser = $('hac-user'), hacPass = $('hac-pass'), hacKeep = $('hac-keep'), hacSync = $('hac-sync');
+    const shared = (k, v) => { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch { return ''; } };
+    const session = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k) || ''; v === null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch { return ''; } };
+    const stamp = () => { const s = load('dash-grades-at', ''); $('grade-note').textContent = s ? `From HAC · ${new Date(s).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : 'Type them in, or sync from HAC. Kept in this browser only.'; };
+    const pull = async (user, pass) => {
+      const url = shared('hac-worker'); if (!/^https:\/\//.test(url)) { hacMsg.textContent = 'Add the reader address first.'; hacForm.hidden = false; return false; }
+      hacMsg.textContent = 'Signing in to HAC…'; hacSync.disabled = true;
+      try {
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user, pass }) }), data = await res.json();
+        if (!res.ok || !Array.isArray(data.classes)) { hacMsg.textContent = data.error || 'HAC sync failed.'; if (res.status === 401) session(P.key('hac-pass'), null); return false; }
+        grades = data.classes.map(c => [c.name, c.average === null ? '' : String(c.average)]); save('dash-grades', grades); save('dash-grades-at', data.fetchedAt || new Date().toISOString());
+        drawGrades(); stamp(); hacMsg.textContent = ''; return true;
+      } catch { hacMsg.textContent = navigator.onLine === false ? 'You’re offline.' : 'Couldn’t reach the reader. Check its address.'; return false; }
+      finally { hacSync.disabled = false; }
+    };
+    hacSync.addEventListener('click', () => { const pass = session(P.key('hac-pass')), user = load('hac-user', ''); if (pass && user && shared('hac-worker')) pull(user, pass); else { hacForm.hidden = !hacForm.hidden; if (!hacForm.hidden) { hacUrl.value = shared('hac-worker'); hacUser.value = load('hac-user', ''); (hacUrl.value ? hacUser.value ? hacPass : hacUser : hacUrl).focus(); } } });
+    hacForm.addEventListener('submit', async e => {
+      e.preventDefault(); shared('hac-worker', hacUrl.value.trim()); save('hac-user', hacUser.value.trim());
+      const ok = await pull(hacUser.value.trim(), hacPass.value); if (ok) { session(P.key('hac-pass'), hacKeep.checked ? hacPass.value : null); hacForm.hidden = true; } hacPass.value = '';
+    });
+    stamp();
     $('grade-add').addEventListener('click', () => { grades.push(['', '']); save('dash-grades', grades); drawGrades(); gradeList.lastChild?.querySelector('input')?.focus(); });
     drawGrades();
   }

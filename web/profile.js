@@ -3,7 +3,7 @@
 window.Profile = (() => {
   const read = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
   const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
-  const OWN = ['dash-links-2', 'dash-tasks', 'dash-tasks-v', 'dash-notes', 'dash-timer', 'dash-focus-tally', 'dash-grades'];
+  const OWN = ['dash-links-2', 'dash-tasks', 'dash-tasks-v', 'dash-notes', 'dash-timer', 'dash-focus-tally', 'dash-grades', 'dash-grades-at', 'hac-user'];
   const ACCENTS = { amber: 'Amber', coral: 'Coral', mint: 'Mint', sky: 'Sky', violet: 'Violet' };
   let list = read('profiles', null);
   if (!Array.isArray(list) || !list.length) list = [{ id: '', name: 'Sam', accent: 'amber', classes: true }];
