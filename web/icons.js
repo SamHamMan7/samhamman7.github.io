@@ -1,4 +1,5 @@
-// Small line icons drawn for this site (no brand logos), plus coloured tiles for links.
+// Small line icons drawn for this site, plus tiles for links. A link tile shows the site's own icon
+// (loaded from the web when online) and falls back to a drawn glyph or letter offline.
 window.SiteIcons = (() => {
   const P = {
     book: '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>',
@@ -15,19 +16,33 @@ window.SiteIcons = (() => {
     clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z"/>',
     bolt: '<path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    timer: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 1.5M9.5 3h5M12 3v3"/>',
+    note: '<path d="M5 4h14v11l-5 5H5z"/><path d="M14 20v-5h5M8.5 9h7M8.5 12.5h4"/>',
+    flag: '<path d="M6 21V4M6 5h11l-2 3.5 2 3.5H6"/>',
     trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 3.5M16 6h3a3 3 0 0 1-3 3.5M12 13v4M8.5 20h7M10 17h4"/>',
   };
   const svg = name => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || ''}</svg>`;
   // Known destinations get a fitting glyph and colour; anything else gets its first letter.
   const KNOWN = [[/schoology/i, 'book', '#2f6fd0'], [/classlink/i, 'grid', '#0f9d8a'], [/claude/i, 'chat', '#e0562b'], [/chatgpt|openai/i, 'prompt', '#1f9d63'], [/aniko|sat/i, 'target', '#d9891a'], [/desmos|math/i, 'sigma', '#7a4fd6'], [/calendar/i, 'calendar', '#c2410c']];
   const PALETTE = ['#2f6fd0', '#0f9d8a', '#e0562b', '#7a4fd6', '#d9891a', '#c23a6b', '#1f9d63'];
-  function tile(name, icon, color) {
+  const ICON_HOST = { 'app.schoology.com': 'schoology.com' };
+  const logoUrl = host => `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
+  function tile(name, icon, color, url) {
     const span = document.createElement('span'); span.className = 'tile-icon';
     let glyph = icon, c = color;
     if (!glyph) { const k = KNOWN.find(([re]) => re.test(name)); if (k) { glyph = k[1]; c = c || k[2]; } }
     if (!c) { let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0; c = PALETTE[h % PALETTE.length]; }
     span.style.setProperty('--c', c);
     if (glyph) span.innerHTML = svg(glyph); else { span.textContent = (name.trim()[0] || '?').toUpperCase(); span.classList.add('tile-letter'); }
+    let host = null; try { host = new URL(url).hostname; } catch {}
+    if (host && navigator.onLine !== false) {
+      const tries = [ICON_HOST[host] || host]; const parts = host.split('.'); if (parts.length > 2 && !ICON_HOST[host]) tries.push(parts.slice(1).join('.'));
+      const img = new Image(); img.alt = ''; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
+      const next = () => { const h = tries.shift(); if (h) img.src = logoUrl(h); };
+      img.onload = () => { if (img.naturalWidth < 32) return next(); span.replaceChildren(img); span.classList.remove('tile-letter'); span.classList.add('tile-logo'); };
+      img.onerror = next; next();
+    }
     return span;
   }
   // Fill in any <span data-icon="name"> placeholders in the page.
