@@ -11,7 +11,8 @@ Intended address: https://samhamman7.github.io/
 Run `node serve.mjs` and open http://127.0.0.1:4175.
 The ready-to-host website is in `dist/`. The personal page source is in `web/`.
 Use `node verify-practice.mjs` to check the math answer keys.
-The supplied games in `web/games/` are preserved byte for byte.
+The games in `web/games/` are single files; Tessera has a size control and Spin & Freeze
+turns to fill an upright phone. Git keeps their bytes exactly (`-text`).
 
 Rebuild from the prepared bot with `python assemble.py PATH_TO_BOT` using
 Python/Pillow and the bot's installed esbuild. Then `python assemble.py --refresh`

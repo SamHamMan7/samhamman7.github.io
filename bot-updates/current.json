@@ -1,12 +1,12 @@
 {
   "archive": "bot-updates/c7a23a7.zip",
-  "sha256": "80568db5d892e63f59073c32f08506fdf190e72a0eb588e663b08ecdc164fb4d",
+  "sha256": "d4f4dc39ebce3ccd06c1064c1c4b01cc638dba5d45626a23e8eb1cd71e87d803",
   "botUpdate": {
     "sourceCommit": "5e8e9e8",
     "updated": "2026-11-12",
     "policy": "public-set response search for Very Strong RandBats",
     "otherFormats": "unchanged stable singles/doubles controllers",
-    "browserAdapter": "preserved from previous browser edition",
+    "browserAdapter": "static sprites, move animations on, silent",
     "championsArena": "Champions VGC runs in a browser worker using the stable Discharge search (native-reply-control) for Very Strong"
   },
   "expectedWorkers": {

@@ -1897,5 +1897,25 @@ render();
 })();
 
 </script>
+<style>
+/* Size control: scales the whole game. Overlays stay full size so drags and tooltips line up. */
+#app,#modal{zoom:var(--z,1)}
+@media (max-width:880px){.board{--cs:clamp(22px,calc((100vw / var(--z,1) - 52px)/var(--n) - 3px),56px)}}
+.sizer{position:fixed;right:max(6px,env(safe-area-inset-right,0px));top:max(6px,env(safe-area-inset-top,0px));opacity:.85;z-index:60;display:flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:rgba(20,18,30,.72);color:#fff;font:600 12px/1 ui-monospace,Menlo,Consolas,monospace;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.sizer button{all:unset;box-sizing:border-box;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:20px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sizer button:hover,.sizer button:focus-visible{background:rgba(255,255,255,.18)}.sizer button:disabled{opacity:.35;cursor:default}
+.sizer output{min-width:42px;text-align:center}
+@media (pointer:coarse){.btn.sm{min-height:40px}}
+</style>
+<div class="sizer" role="group" aria-label="Game size"><button type="button" id="size-down" aria-label="Smaller">&minus;</button><output id="size-now" aria-live="polite"></output><button type="button" id="size-up" aria-label="Larger">+</button></div>
+<script>
+(()=>{const steps=[.6,.7,.8,.9,1,1.1,1.25],root=document.documentElement,down=document.getElementById('size-down'),up=document.getElementById('size-up'),now=document.getElementById('size-now');
+ let saved=null;try{saved=parseFloat(localStorage.getItem('tessera-size'));}catch(e){}
+ // Phones start smaller so a whole stage fits with less scrolling.
+ let i=steps.indexOf(saved);if(i<0)i=steps.indexOf(Math.min(innerWidth,innerHeight)<=520?.8:1);
+ function apply(){root.style.setProperty('--z',steps[i]);now.textContent=Math.round(steps[i]*100)+'%';down.disabled=i===0;up.disabled=i===steps.length-1;}
+ function step(d){i=Math.max(0,Math.min(steps.length-1,i+d));try{localStorage.setItem('tessera-size',steps[i]);}catch(e){}apply();}
+ down.addEventListener('click',()=>step(-1));up.addEventListener('click',()=>step(1));apply();})();
+</script>
 </body>
 </html>
