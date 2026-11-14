@@ -34,3 +34,19 @@ answers.set('aime-08',8*13*14*15/(4*Math.sqrt(21*(21-13)*(21-14)*(21-15))));
 assert.equal(problems.length,16);assert.equal(new Set(problems.map(p=>p.id)).size,16);
 for(const p of problems){const raw=p.choices?.[p.answer];const value=p.set==='AIME'?p.answer:raw.includes('/')?raw.split('/').map(Number).reduce((a,b)=>a/b):Number(raw);assert.ok(Math.abs(value-answers.get(p.id))<1e-10,p.id);if(p.set==='AIME')assert.ok(Number.isInteger(p.answer)&&p.answer>=0&&p.answer<=999);}
 console.log('Verified all 16 answer keys using independent calculations and enumeration.');
+
+// Study help (Chem Olympiad / AI Olympiad): independent re-derivation of every numeric key.
+vm.runInNewContext(fs.readFileSync('web/study-problems.js','utf8'),context);
+const study=context.window.STUDY_PROBLEMS,expect=new Map([
+ ['chem-01',Math.min(5.40/26.98/2,10.65/70.90/3)*2*133.33],['chem-03',2*-393.5+3*-285.8+277.7],['chem-04',100*0.5**3],['chem-05',2*(-0.2+Math.sqrt(0.04+3.2))/8],
+ ['chem-06',-Math.log10(Math.sqrt(1.8e-5*0.10))],['chem-07',-Math.log10(1.8e-5)],['chem-08',-2*96485*1.10/1000],['chem-10',1.8e-10/0.10],['chem-12',-3*1.86*0.100],
+ ['ai-01',0-0.1*2*(0-3)],['ai-02',0.25],['ai-03',3/(1+3)],['ai-05',100*10+10],['ai-06',2*0.75*0.6/(0.75+0.6)],['ai-09',Math.log(2)]]);
+const text=new Map([['chem-02','CO₂'],['chem-09','SF₄'],['chem-11','4'],['ai-04','28×28'],['ai-07','Add regularization or more training data'],['ai-08','(3, 4)'],['ai-10','B, with 2 of 3'],['ai-11','O(n²)'],['ai-12','1 and 3']]);
+const superscripts='⁰¹²³⁴⁵⁶⁷⁸⁹',number=raw=>{let t=raw.replace(/\s/g,'').replace(/−/g,'-').replace('×10','e').replace(/⁻/g,'-');for(const [i,c] of [...superscripts].entries())t=t.replaceAll(c,String(i));return Number(t.match(/^[+-]?[\d.]+(e-?\d+)?/)[0]);};
+assert.equal(study.length,24);assert.equal(new Set(study.map(p=>p.id)).size,24);assert.equal(expect.size+text.size,24);
+assert.ok(Math.abs(1.96*0.08206*273.15-44.01)<0.3);
+for(const p of study){assert.ok(p.answer>=0&&p.answer<p.choices.length&&new Set(p.choices).size===p.choices.length,p.id);const raw=p.choices[p.answer];
+ if(text.has(p.id)){assert.equal(raw,text.get(p.id),p.id);continue;}
+ const want=expect.get(p.id),error=x=>Math.abs(number(x)-want);assert.ok(error(raw)<=Math.max(0.012*Math.abs(want),0.006),p.id);
+ for(const [i,c] of p.choices.entries())if(i!==p.answer)assert.ok(error(c)>error(raw),p.id);}
+console.log('Verified all 24 study answer keys.');
