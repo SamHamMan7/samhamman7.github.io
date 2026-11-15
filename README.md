@@ -34,9 +34,11 @@ Physical phone performance has not been verified.
 
 ## Source and attribution
 
-The Pokémon bot was built with AI assistance. Preserve its AGPL-3.0 license,
+Much of this site and its Pokémon bots were written with help from Claude
+(Anthropic's AI assistant, via Claude Code and Cowork). The Pokémon bot was built with AI assistance. Preserve its AGPL-3.0 license,
 third-party notices, artwork notices, and corresponding-source ZIP. Pokémon
-artwork retains its respective owners' rights. See `dist/credits.html`.
+artwork retains its respective owners' rights. See `dist/credits.html`, which
+also credits Foul Play and poke-engine (Very Strong Random Battle bot).
 
 ## November 2026 bot update
 
