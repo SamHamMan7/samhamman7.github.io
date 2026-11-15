@@ -125,15 +125,36 @@ window.SiteGrades = (() => {
 
   // ---------- drawing ----------
   const tag = n => { const t = el('span', 'grade-tag' + (n === null ? '' : ' g-' + letter(n)), letter(n)); return t; };
+  // Past due with no score: what HAC and GradeWay call missing.
+  const dueDate = d => { const m = String(d).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? new Date(+m[3], +m[1] - 1, +m[2]) : null; };
+  const isMissing = a => { const v = String(a.score ?? '').trim(), d = dueDate(a.due); return /^(m|z|missing)$/i.test(v) || (!v && !!d && d < new Date(new Date().toDateString())); };
+  const ring = (n, size = 64) => { const r = el('span', 'gr-ring' + (n === null ? '' : ' g-' + letter(n))); r.style.setProperty('--p', String(Math.max(0, Math.min(100, n ?? 0)))); r.style.setProperty('--s', size + 'px'); r.append(el('span', 'gr-ring-n', n === null ? '–' : fmt(n, 1))); return r; };
   function classCard(c) {
-    const card = el('button', 'gr-class' + (openClass === c.name ? ' open' : '')); card.type = 'button'; card.setAttribute('aria-expanded', String(openClass === c.name));
-    const proj = projected(c), shown = proj ?? c.average;
-    const top = el('span', 'gr-class-top'); top.append(el('span', 'gr-class-name', c.name), tag(shown));
-    const n = el('span', 'gr-class-avg', c.average === null ? '–' : fmt(c.average));
-    if (proj !== null && Math.abs(proj - (c.average ?? 0)) > .004) n.append(el('small', proj > (c.average ?? 0) ? 'up' : 'down', ` → ${fmt(proj)}`));
-    card.append(top, n, el('span', 'gr-class-sub', `${c.assignments.filter(a => num(a.score) !== null).length} graded · ${c.categories.map(x => `${x.name.replace(/\s*grades?$/i, '')} ${x.weight ? fmt(x.weight, 0) + '%' : ''}`).join(' · ')}`));
+    const card = el('button', 'gr-class' + (openClass === c.name ? ' open' : '') + (c.average === null ? '' : ' gc-' + letter(c.average))); card.type = 'button'; card.setAttribute('aria-expanded', String(openClass === c.name));
+    const proj = projected(c), missing = c.assignments.filter(isMissing).length;
+    const body = el('span', 'gr-class-body'), top = el('span', 'gr-class-top');
+    top.append(el('span', 'gr-class-name', c.name)); if (missing) top.append(el('span', 'gr-missing', `${missing} missing`));
+    body.append(top);
+    if (proj !== null && Math.abs(proj - (c.average ?? 0)) > .004) body.append(el('span', 'gr-proj ' + (proj > (c.average ?? 0) ? 'up' : 'down'), `What-if ${fmt(proj)} (HAC ${fmt(c.average)})`));
+    const bars = el('span', 'gr-bars');
+    for (const k of c.categories) { const row = el('span', 'gr-bar'), fill = el('span', 'gr-bar-fill' + (k.percent === null ? '' : ' g-' + letter(k.percent))); fill.style.width = Math.max(0, Math.min(100, k.percent ?? 0)) + '%'; const track = el('span', 'gr-bar-track'); track.append(fill); row.append(el('span', 'gr-bar-name', `${k.name.replace(/\s*grades?$/i, '')}${k.weight ? ' ' + fmt(k.weight, 0) + '%' : ''}`), track, el('span', 'gr-bar-n', k.percent === null ? '–' : fmt(k.percent, 0))); bars.append(row); }
+    if (!c.categories.length) bars.append(el('span', 'gr-class-sub', `${c.assignments.filter(a => num(a.score) !== null).length} graded`));
+    body.append(bars);
+    card.append(ring(proj ?? c.average), body);
     card.addEventListener('click', () => { openClass = openClass === c.name ? null : c.name; draw(); document.getElementById('gr-detail')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
     return card;
+  }
+  function summary(show) {
+    const box = el('div', 'gr-hero'), avgs = show.classes.map(c => c.average).filter(n => n !== null), avg = avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null;
+    const set = Object.assign({ honors: .5, ap: 1, types: {} }, load('gpa-settings', {})), g = gpa(show.classes.filter(c => c.average !== null).map(c => ({ grade: c.average, type: set.types[c.name] || guessType(c.name) })), set);
+    const missing = show.classes.reduce((n, c) => n + c.assignments.filter(isMissing).length, 0), sorted = [...show.classes].filter(c => c.average !== null).sort((a, b) => b.average - a.average);
+    const stat = (value, label) => { const d = el('div', 'gr-hero-stat'); d.append(el('strong', '', value), el('span', '', label)); return d; };
+    const main = el('div', 'gr-hero-main'); main.append(el('span', 'gr-hero-label', view ? 'Past grading period' : 'This grading period'), el('strong', 'gr-hero-avg', avg === null ? '–' : fmt(avg, 1)), el('span', 'gr-hero-sub', 'average across ' + show.classes.length + ' classes'));
+    const stats = el('div', 'gr-hero-stats');
+    if (g) stats.append(stat(g.weighted.toFixed(2), 'weighted GPA'), stat(g.unweighted.toFixed(2), 'unweighted GPA'));
+    stats.append(stat(String(missing), missing === 1 ? 'missing assignment' : 'missing assignments'));
+    if (sorted.length > 1) stats.append(stat(sorted[0].name, 'strongest · ' + fmt(sorted[0].average, 1)));
+    box.append(main, stats); return box;
   }
   function wi(c) { if (!whatIf.has(c.name)) whatIf.set(c.name, { edits: new Map(), extra: [] }); return whatIf.get(c.name); }
   function rowsWith(c) { const w = whatIf.get(c.name); if (!w) return c.assignments; return [...c.assignments.map((a, i) => w.edits.has(i) ? { ...a, score: w.edits.get(i) } : a), ...w.extra]; }
@@ -155,7 +176,8 @@ window.SiteGrades = (() => {
       input.addEventListener('change', () => { const v = input.value.trim(); if (v === String(a.score)) w.edits.delete(i); else w.edits.set(i, v); draw(); });
       const s = num(edited ? w.edits.get(i) : a.score), pct = s !== null && a.total ? s / a.total * 100 : a.percent;
       const cell = el('td', 'gr-score'); cell.append(input);
-      tr.append(el('td', 'gr-date', a.due.replace(/\/\d{4}$/, '')), el('td', 'gr-name', a.name), el('td', 'gr-cat', a.category), cell, el('td', 'gr-out', a.total === null ? '' : fmt(a.total)), el('td', 'gr-pct', pct === null ? '' : fmt(pct, 0)));
+      const nm = el('td', 'gr-name', a.name); if (isMissing(a) && !edited) nm.append(el('span', 'gr-missing', 'missing'));
+      tr.append(el('td', 'gr-date', a.due.replace(/\/\d{4}$/, '')), nm, el('td', 'gr-cat', a.category), cell, el('td', 'gr-out', a.total === null ? '' : fmt(a.total)), el('td', 'gr-pct', pct === null ? '' : fmt(pct, 0)));
       if (pct !== null) tr.classList.add('g-row-' + letter(pct)); tbody.append(tr);
     });
     w.extra.forEach((a, i) => { const tr = el('tr', 'gr-extra'), x = el('button', 'task-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Remove what-if'); x.addEventListener('click', () => { w.extra.splice(i, 1); draw(); }); const nameCell = el('td', 'gr-name', a.name); nameCell.append(x); const s = num(a.score); tr.append(el('td', 'gr-date', 'what-if'), nameCell, el('td', 'gr-cat', a.category), el('td', 'gr-score', a.score), el('td', 'gr-out', fmt(a.total)), el('td', 'gr-pct', s !== null && a.total ? fmt(s / a.total * 100, 0) : '')); tbody.append(tr); });
@@ -214,6 +236,7 @@ window.SiteGrades = (() => {
     if (!has) return;
     runSel.replaceChildren(...(data.runs || []).map(r => new Option(r.label, r.value, false, view ? r.value === view.run : r.selected))); runSel.hidden = !(data.runs || []).length;
     $('gr-run-note').textContent = view ? 'Past grading period (what-if and GPA use the current one).' : '';
+    $('gr-hero-slot').replaceChildren(summary(show));
     const grid = $('gr-classes'); grid.replaceChildren(...show.classes.map(classCard));
     const open = show.classes.find(c => c.name === openClass); $('gr-detail-slot').replaceChildren(...(open ? [detail(open)] : []));
     const rc = data.reportCard; $('gr-report').replaceChildren(...(rc ? [genericTable(rc, /^(sem|s)\s*\d|semester|exam/i)] : [el('p', 'muted', 'HAC didn’t return a report card.')]));
