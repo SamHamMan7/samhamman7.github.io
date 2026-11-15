@@ -19,7 +19,7 @@
   },
   "championsWorker": {
     "file": "web/champions.worker.js",
-    "sha256": "012db44e58f961d7fd60584da998c17576cc691b59681bbd7b8e0f892d256b68",
-    "builtFrom": "bot commit f098078, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
+    "sha256": "754336d0dbeb9fa5e03b8ea0883783e85b916ea08689951d644353c6dbbc2c7f",
+    "builtFrom": "bot commit 7fe7c0d, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }
