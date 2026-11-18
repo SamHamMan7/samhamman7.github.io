@@ -1,9 +1,9 @@
 {
-  "archive": "bot-updates/foulplay-v1.zip",
-  "sha256": "4cf488b4180c27a94eb42bf63012650b7cbad62f65e2d16d15f7236a64f19a8d",
+  "archive": "bot-updates/review-v1.zip",
+  "sha256": "2f00006ea0c36675bcc65db4d23cf15bf069fdab6a6494ee86d9efe221bd31f7",
   "botUpdate": {
     "sourceCommit": "f098078",
-    "updated": "2026-11-14",
+    "updated": "2026-11-17",
     "policy": "public-set response search for Very Strong RandBats",
     "otherFormats": "unchanged stable singles/doubles controllers",
     "browserAdapter": "static sprites, move animations on, silent",
@@ -11,7 +11,8 @@
     "ratedPlay": "Games are rated by default (per-format rating in the browser picks Medium, Strong or Very Strong); the game-type picker offers unrated levels",
     "variety": "Champions bot goes through its whole team pool in a shuffled order before repeating, remixes sets only with moves, items and abilities that published teams gave the same species, and samples wider among near-best moves",
     "switching": "Very Strong pays a small search cost for switching, larger for consecutive switches and for cycling a Pokemon back in or out",
-    "randomBattle": "Very Strong Random Battles use a port of Foul Play (GPL-3.0) searching with poke-engine (MIT) compiled to WebAssembly; the previous bot is the fallback"
+    "randomBattle": "Very Strong Random Battles use a port of Foul Play (GPL-3.0) searching with poke-engine (MIT) compiled to WebAssembly; the previous bot is the fallback",
+    "gameReview": "Finished Champions games are saved in the browser (last 8); review.html replays one in the Champions worker and shows, per decision, what Discharge would have played in the player seat, its win-chance estimate and the replies it expected"
   },
   "expectedWorkers": {
     "ai.worker.js": "dec75daabfb61afa9dc8ab5275cf0092677d4934728dc98222553bfc7116e834",
@@ -19,7 +20,7 @@
   },
   "championsWorker": {
     "file": "web/champions.worker.js",
-    "sha256": "754336d0dbeb9fa5e03b8ea0883783e85b916ea08689951d644353c6dbbc2c7f",
-    "builtFrom": "bot commit 7fe7c0d, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
+    "sha256": "3e75d78e98028e278453dc23bd6c400d3a9811d9bbd528f4ad590457c8424ee9",
+    "builtFrom": "bot commit b9aca69 plus the game-review worker changes in bot-updates/review-v1.zip, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }
