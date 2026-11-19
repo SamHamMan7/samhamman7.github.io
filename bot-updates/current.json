@@ -1,13 +1,13 @@
 {
-  "archive": "bot-updates/review-v2.zip",
-  "sha256": "ea75e84fecf4b9eefa742c2e5474083d1599e06cf3ba62b40d97886d2eb5ed14",
+  "archive": "bot-updates/review-v3.zip",
+  "sha256": "b7b1d9d20a76a46de3f9c05167a1d3e600d04b5306628454c61c59a580e65fe3",
   "botUpdate": {
     "sourceCommit": "f098078",
-    "updated": "2026-11-18",
+    "updated": "2026-11-19",
     "policy": "public-set response search for Very Strong RandBats",
     "otherFormats": "unchanged stable singles/doubles controllers",
     "browserAdapter": "static sprites, move animations on, silent",
-    "championsArena": "Champions VGC runs in a browser worker using the stable Discharge search (native-reply-control) for Very Strong",
+    "championsArena": "Every Champions level (Medium, Strong, Very Strong) runs the stable Discharge search (native-reply-control); lower levels sample more widely among near-best moves and leads",
     "ratedPlay": "Games are rated by default (per-format rating in the browser picks Medium, Strong or Very Strong); the game-type picker offers unrated levels",
     "variety": "Champions bot goes through its whole team pool in a shuffled order before repeating, remixes sets only with moves, items and abilities that published teams gave the same species, and samples wider among near-best moves",
     "switching": "Very Strong pays a small search cost for switching, larger for consecutive switches and for cycling a Pokemon back in or out",
@@ -21,7 +21,7 @@
   },
   "championsWorker": {
     "file": "web/champions.worker.js",
-    "sha256": "0ca061176feb00ecb53456c61431a02357b00cc838a4a28586b1a7151e660a72",
-    "builtFrom": "bot commit b9aca69 plus the game-review and damage-game worker changes in bot-updates/review-v2.zip, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
+    "sha256": "051685cf09755b456ce66c182956e49f44510c12c16bc9e6a3e4e535433bd289",
+    "builtFrom": "bot commit b9aca69 plus the game-review, damage-game and level changes in bot-updates/review-v3.zip, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }
