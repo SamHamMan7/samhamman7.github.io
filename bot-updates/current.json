@@ -1,6 +1,6 @@
 {
-  "archive": "bot-updates/review-v3.zip",
-  "sha256": "b7b1d9d20a76a46de3f9c05167a1d3e600d04b5306628454c61c59a580e65fe3",
+  "archive": "bot-updates/review-v4.zip",
+  "sha256": "b005d97ba06935961c8373f73ad9bd3699332e44bb7938c27abf253584cbcd39",
   "botUpdate": {
     "sourceCommit": "f098078",
     "updated": "2026-11-19",
@@ -10,7 +10,7 @@
     "championsArena": "Every Champions level (Medium, Strong, Very Strong) runs the stable Discharge search (native-reply-control); lower levels sample more widely among near-best moves and leads",
     "ratedPlay": "Games are rated by default (per-format rating in the browser picks Medium, Strong or Very Strong); the game-type picker offers unrated levels",
     "variety": "Champions bot goes through its whole team pool in a shuffled order before repeating, remixes sets only with moves, items and abilities that published teams gave the same species, and samples wider among near-best moves",
-    "switching": "Very Strong pays a small search cost for switching, larger for consecutive switches and for cycling a Pokemon back in or out",
+    "switching": "No switch penalty: the Discharge search decides switches on its own",
     "randomBattle": "Very Strong Random Battles use a port of Foul Play (GPL-3.0) searching with poke-engine (MIT) compiled to WebAssembly; the previous bot is the fallback",
     "gameReview": "Finished Champions games are saved in the browser (last 8); review.html replays one in the Champions worker and shows, per decision, what Discharge would have played in the player seat, its win-chance estimate and the replies it expected",
     "damageGame": "damage.html asks the Champions worker (calc message) for a position built from two pool teams and all 16 Showdown damage rolls of one move, for a guessing game"
@@ -21,7 +21,7 @@
   },
   "championsWorker": {
     "file": "web/champions.worker.js",
-    "sha256": "051685cf09755b456ce66c182956e49f44510c12c16bc9e6a3e4e535433bd289",
-    "builtFrom": "bot commit b9aca69 plus the game-review, damage-game and level changes in bot-updates/review-v3.zip, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
+    "sha256": "b031114bb88d553ef01cd3c892419f43927119fe0d696915e6e270803fdec148",
+    "builtFrom": "bot commit b9aca69 plus the game-review, damage-game and level changes in bot-updates/review-v4.zip, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }
