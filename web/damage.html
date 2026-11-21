@@ -1,52 +1,48 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#ffb81c"><title>Damage guess · my site</title><link rel="icon" href="./site-icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./site.css">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#ffb81c"><title>Damage guess · my site</title><link rel="icon" href="./site-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style/battle.css"><link rel="stylesheet" href="/style/sim-types.css"><link rel="stylesheet" href="/style/font-awesome.css">
 <style>
-.dg{max-width:860px;margin:0 auto;padding:26px 16px 60px;overflow-wrap:anywhere}
-.dg h1{margin:14px 0 6px}.dg .lead{color:var(--soft);margin-bottom:18px}
-.dg-top{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;font-size:14px}
-.dg-box{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:16px 18px;margin:0 0 16px}
-.dg-score{display:flex;gap:8px 22px;flex-wrap:wrap;font-size:14px;color:var(--soft);align-items:center}
-.dg-score b{color:var(--ink);font-size:17px;margin-right:4px}
-.dg-score label{display:flex;gap:6px;align-items:center;cursor:pointer}
-.dg-mons{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:start}
-.dg-mon{min-width:0}
-.dg-mon .who{display:flex;gap:10px;align-items:center}
-.dg-mon img{width:72px;height:72px;image-rendering:pixelated;flex:none}
-.dg-mon h2{margin:0;font-size:18px;line-height:1.25}
-.dg-mon .role{font-size:12px;color:var(--soft);text-transform:uppercase;letter-spacing:.06em}
-.dg-mon dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:10px 0 0;font-size:14px}
-.dg-mon dt{color:var(--soft)}.dg-mon dd{margin:0}
-.dg-move{text-align:center;padding-top:26px;font-size:14px;min-width:120px}
-.dg-move strong{display:block;font-size:17px}
-.dg-move .arrow{font-size:22px;color:var(--soft);line-height:1}
-.tag{display:inline-block;font-size:12px;font-weight:600;border-radius:99px;padding:1px 9px;border:1px solid var(--line);white-space:nowrap;margin:3px 2px 0}
-.tag.hot{color:var(--bad,#963a32);border-color:currentColor}
-.dg-field{font-size:13.5px;color:var(--soft);margin:12px 0 0;border-top:1px dashed var(--line);padding-top:10px}
-.dg-guess label{display:block;font-size:14px;margin-bottom:8px}
-.dg-guess .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.dg-guess input[type=range]{flex:1;min-width:200px;accent-color:var(--accent)}
-.dg-guess output{font-size:22px;font-weight:700;min-width:84px;font-variant-numeric:tabular-nums}
-.dg-guess input[type=number]{width:90px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font:inherit}
-.dg-guess button.primary,.dg-next{background:var(--accent);border-color:var(--accent);color:var(--paper);font-weight:600}
-.dg-bar{position:relative;height:34px;margin:18px 0 6px;border-radius:6px;background:var(--paper);border:1px solid var(--line);overflow:hidden}
-.dg-bar .range{position:absolute;top:0;bottom:0;background:var(--accent);opacity:.35}
-.dg-bar .ko{position:absolute;top:0;bottom:0;width:2px;background:var(--bad,#963a32)}
-.dg-bar .you{position:absolute;top:-2px;bottom:-2px;width:3px;background:var(--ink)}
-.dg-axis{position:relative;height:18px;margin-bottom:10px;font-size:11px;color:var(--soft)}.dg-axis span{position:absolute;transform:translateX(-50%)}
-.dg-result h2{margin:0 0 6px;font-size:20px}.dg-result .pts{font-size:15px}
-.dg-result.good h2{color:var(--good,#245f33)}.dg-result.bad h2{color:var(--bad,#963a32)}
-.dg-rolls{font-size:13px;color:var(--soft);margin:8px 0 0;font-variant-numeric:tabular-nums}
-.dg-note{font-size:13px;color:var(--soft)}
-@media(max-width:600px){.dg-mons{grid-template-columns:1fr}.dg-move{padding:4px 0;text-align:left;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.dg-move .arrow{display:none}.dg-mon img{width:56px;height:56px}}
-</style></head><body><main class="dg">
-<div class="dg-top"><a href="./#play">← Games</a><a href="./battle.html">Play Discharge</a></div>
-<h1>Damage guess</h1>
-<p class="lead">A Champions VGC attacker uses a move on a defender. Guess how much of the defender’s HP it takes, then see the real range from the battle simulator. Works offline.</p>
-<section class="dg-box"><div class="dg-score"><span><b id="dg-played">0</b>played</span><span><b id="dg-avg">–</b>average score</span><span><b id="dg-streak">0</b>in a row inside the range</span><label><input type="checkbox" id="dg-crit" checked> Include critical hits</label></div></section>
-<section class="dg-box" id="dg-q" aria-live="polite"><p id="dg-loading">Loading the simulator…</p></section>
-<section class="dg-box dg-guess" id="dg-guess" hidden>
-<label for="dg-range">Your guess: damage as a % of the defender’s max HP (use the middle of the range you expect)</label>
-<div class="row"><input type="range" id="dg-range" min="0" max="150" step="1" value="50"><output id="dg-out" for="dg-range">50%</output><input type="number" id="dg-num" min="0" max="300" step="1" value="50" aria-label="Guess in percent"><button type="button" class="primary" id="dg-lock">Lock in</button></div>
-</section>
-<section class="dg-box dg-result" id="dg-result" hidden></section>
-<p class="dg-note">Sets, stats and items come from the Champions team pool the bot uses. Abilities that act on entry (Intimidate, weather, terrain) have already happened. Damage is computed by the same Showdown simulator the battles use, so it includes everything Showdown counts. Scoring: 100 inside the range, minus 5 points for each % you are outside it.</p>
+/* Showdown look: its battle screen on top, a Showdown-style control panel underneath. */
+:root{--bg:#f3f5f8;--panel:#fff;--ink:#222;--soft:#555;--line:#aab;--blue:#4e6fd1;--good:#127a2e;--bad:#b22;--btn1:#f6f6f6;--btn2:#e3e3e3;font:13px/1.45 Verdana,Helvetica,Arial,sans-serif;color:var(--ink)}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1f26;--panel:#262a33;--ink:#ddd;--soft:#aaa;--line:#556;--btn1:#3a3f4a;--btn2:#30343d;--good:#5fd08a;--bad:#f08a80;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink)}
+.wrap{max-width:1000px;margin:0 auto;padding:14px max(12px,env(safe-area-inset-left,0px)) 40px max(12px,env(safe-area-inset-right,0px))}
+.top{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.top a{color:var(--blue)}
+h1{font-size:18px;margin:0}
+.stage{display:grid;grid-template-columns:640px minmax(0,1fr);gap:10px;align-items:start}
+.fitbox{position:relative;overflow:hidden;min-width:0;width:100%;max-width:640px;height:360px}.frame{position:absolute;top:0;left:0;width:640px;height:360px}
+.frame .battle{position:relative}
+.logbox{height:360px;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:4px;min-width:0}
+.logbox .battle-log{position:static;height:auto;border:0}
+.controls{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin-top:10px}
+.whatdo{font-weight:bold;margin:0 0 8px}
+.sets{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px}
+.set{border:1px solid var(--line);border-radius:4px;padding:6px 8px;background:var(--bg)}
+.set h3{margin:0 0 3px;font-size:13px}.set p{margin:1px 0;color:var(--soft);font-size:12px}
+.movebtn{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border:1px solid var(--line);border-radius:5px;background:linear-gradient(var(--btn1),var(--btn2));font-weight:bold;margin:0 0 8px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row input[type=range]{flex:1 1 200px;min-width:0}
+.row output{font-size:18px;font-weight:bold;min-width:60px;font-variant-numeric:tabular-nums}
+.row input[type=number]{width:70px;font:inherit;padding:3px 5px}
+button.button{font:bold 13px Verdana,sans-serif;padding:5px 14px;border:1px solid var(--line);border-radius:5px;background:linear-gradient(var(--btn1),var(--btn2));color:var(--ink);cursor:pointer}
+button.button.go{border-color:#4a68b8;background:linear-gradient(#8ea6ee,#5f7fd6);color:#fff}
+.result{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.result h2{font-size:15px;margin:0 0 4px}.result.good h2{color:var(--good)}.result.bad h2{color:var(--bad)}
+.bar{position:relative;height:16px;border:1px solid var(--line);border-radius:3px;background:var(--bg);margin:8px 0 2px;overflow:hidden}
+.bar .r{position:absolute;top:0;bottom:0;background:#7fb0f5}.bar .ko{position:absolute;top:0;bottom:0;width:2px;background:var(--bad)}.bar .y{position:absolute;top:-1px;bottom:-1px;width:3px;background:var(--ink)}
+.small{font-size:11px;color:var(--soft)}
+.score{display:flex;gap:14px;flex-wrap:wrap;color:var(--soft)}.score b{color:var(--ink)}
+@media(max-width:980px){.stage{grid-template-columns:minmax(0,1fr)}.logbox{height:140px}}
+@media(max-width:660px){.sets{grid-template-columns:1fr}}
+</style>
+<script src="/config/config.js"></script><script src="/js/lib/jquery-2.2.4.min.js"></script><script src="/js/battle-sound.js"></script><script src="/js/lib/html-css-sanitizer-minified.js"></script><script src="/js/lib/lodash.core.js"></script>
+<script src="/data/text/en.js"></script><script src="/js/battledata.js"></script><script src="/js/oldclient/storage.js"></script><script src="/data/pokedex-mini.js"></script><script src="/data/typechart.js"></script><script src="/data/pokedex.js"></script><script src="/data/moves.js"></script><script src="/js/battle.js"></script><script src="/js/battle-tooltips.js"></script>
+<script src="/js/battle-animations.js"></script><script src="/js/battle-animations-moves.js"></script><script src="/data/offline-resource-fallbacks.js"></script><script src="/showdown-scene.js"></script>
+</head><body><main class="wrap">
+<div class="top"><a href="./#play">← Games</a><h1>Damage guess</h1><div class="score"><span><b id="dg-played">0</b> played</span><span><b id="dg-avg">–</b> avg score</span><span><b id="dg-streak">0</b> in a row</span><label><input type="checkbox" id="dg-crit" checked> Crits</label></div></div>
+<div class="stage"><div class="fitbox"><div class="frame" id="dg-frame"></div></div><div class="logbox"><div class="battle-log" id="dg-log"></div></div></div>
+<section class="controls" id="dg-controls" aria-live="polite"><p class="whatdo" id="dg-what">Loading the simulator…</p>
+<div class="sets" id="dg-sets"></div>
+<div id="dg-guess" hidden><div class="row"><label for="dg-range">Damage (% of its max HP)</label><input type="range" id="dg-range" min="0" max="150" value="50"><output id="dg-out">50%</output><input type="number" id="dg-num" min="0" max="300" value="50" aria-label="Guess in percent"><button class="button go" type="button" id="dg-lock">Lock in</button></div></div>
+<div class="result" id="dg-result" hidden></div></section>
+<p class="small">Sets come from the Champions team pool the bot uses; entry abilities (Intimidate, weather, terrain) have already happened. The damage comes from the same Showdown simulator the battles use. Score: 100 inside the range, minus 5 for each % outside. Works offline.</p>
 </main><script src="./damage.js"></script></body></html>

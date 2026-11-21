@@ -1,14 +1,14 @@
 {
-  "archive": "bot-updates/review-v4.zip",
-  "sha256": "b005d97ba06935961c8373f73ad9bd3699332e44bb7938c27abf253584cbcd39",
+  "archive": "bot-updates/review-v5.zip",
+  "sha256": "a2c42e3fc11cba4527c982b150ef3d8c9a9f839fc6a56c406ac8d8fafd790094",
   "botUpdate": {
     "sourceCommit": "f098078",
-    "updated": "2026-11-19",
+    "updated": "2026-11-21",
     "policy": "public-set response search for Very Strong RandBats",
     "otherFormats": "unchanged stable singles/doubles controllers",
     "browserAdapter": "static sprites, move animations on, silent",
     "championsArena": "Every Champions level (Medium, Strong, Very Strong) runs the stable Discharge search (native-reply-control); lower levels sample more widely among near-best moves and leads",
-    "ratedPlay": "Games are rated by default (per-format rating in the browser picks Medium, Strong or Very Strong); the game-type picker offers unrated levels",
+    "ratedPlay": "Every game is rated: the rating on this device picks Medium, Strong or Very Strong (all Discharge); no unrated picker",
     "variety": "Champions bot goes through its whole team pool in a shuffled order before repeating, remixes sets only with moves, items and abilities that published teams gave the same species, and samples wider among near-best moves",
     "switching": "No switch penalty: the Discharge search decides switches on its own",
     "randomBattle": "Very Strong Random Battles use a port of Foul Play (GPL-3.0) searching with poke-engine (MIT) compiled to WebAssembly; the previous bot is the fallback",
@@ -21,7 +21,7 @@
   },
   "championsWorker": {
     "file": "web/champions.worker.js",
-    "sha256": "b031114bb88d553ef01cd3c892419f43927119fe0d696915e6e270803fdec148",
-    "builtFrom": "bot commit b9aca69 plus the game-review, damage-game and level changes in bot-updates/review-v4.zip, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
+    "sha256": "cd92a72e6095307ed5ee9b7530373c5ca2a541b3d5d50b304df18130dfb3c463",
+    "builtFrom": "bot commit b9aca69 plus the game-review, damage-game and level changes in bot-updates/review-v5.zip, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }
