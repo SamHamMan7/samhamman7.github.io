@@ -1,56 +1,91 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#ffb81c"><title>Game review · my site</title><link rel="icon" href="./site-icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./site.css">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#111214"><title>Game review · my site</title><link rel="icon" href="./site-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style/battle.css"><link rel="stylesheet" href="/style/sim-types.css"><link rel="stylesheet" href="/style/font-awesome.css">
 <style>
-.rv{max-width:860px;overflow-wrap:anywhere;margin:0 auto;padding:26px 16px 60px}
-.rv h1{margin:14px 0 6px}.rv .lead{color:var(--soft);margin-bottom:22px}
-.rv-top{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;font-size:14px}
-.rv-box{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:16px 18px;margin:0 0 16px}
-.rv-box h2{margin:0 0 10px;font-size:17px}
-.rv-games{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.rv-games li{margin:0}
-.rv-games button{width:100%;text-align:left;display:flex;gap:6px 14px;flex-wrap:wrap;align-items:baseline;border-radius:10px;background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:10px 14px}
-.rv-games button[aria-current=true]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
-.rv-games .team{color:var(--soft);font-size:13px}
-.tag{display:inline-block;font-size:12px;font-weight:600;border-radius:99px;padding:1px 9px;border:1px solid var(--line);white-space:nowrap}
-.tag.win{color:var(--good,#245f33);border-color:currentColor}.tag.loss{color:var(--bad,#963a32);border-color:currentColor}
-.rv-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 14px}
-.rv-stat{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--paper)}
-.rv-stat b{display:block;font-size:22px;line-height:1.2}.rv-stat span{font-size:13px;color:var(--soft)}
-.rv-chart{position:relative}.rv-chart svg{display:block;width:100%;height:auto;overflow:visible}
-.rv-chart .grid{stroke:var(--line);stroke-width:1}.rv-chart .mid{stroke:var(--soft);stroke-width:1;stroke-dasharray:3 4}
-.rv-chart text{fill:var(--soft);font-size:11px}
-.rv-chart .line{fill:none;stroke:var(--blue,#2f6fd0);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.rv-chart .dot{fill:var(--blue,#2f6fd0);stroke:var(--card);stroke-width:2}
-.rv-chart .dot.miss{fill:var(--card);stroke:var(--bad,#963a32);stroke-width:2.5}
-.rv-chart .hit{fill:transparent;cursor:pointer}.rv-chart .cross{stroke:var(--soft);stroke-width:1;visibility:hidden}
-.rv-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font-size:12.5px;line-height:1.45;border-radius:8px;padding:7px 10px;max-width:260px;transform:translate(-50%,-100%);z-index:3}
-.rv-legend{font-size:12.5px;color:var(--soft);display:flex;gap:6px 18px;flex-wrap:wrap;margin-top:6px}
-.rv-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--blue,#2f6fd0)}
-.rv-legend i.miss{background:var(--card);border:2.5px solid var(--bad,#963a32)}
-.rv-box h2+.rv-miss,#rv-mistakes h2{margin-top:16px}.rv-miss{margin:0;padding-left:20px}.rv-miss button{display:inline;min-height:0;line-height:inherit;border:0;background:none;padding:0;min-height:0;color:var(--accent-ink,var(--accent));text-decoration:underline;text-align:left}
-.rv-step{scroll-margin-top:12px}
-.rv-head{display:flex;gap:4px 12px;flex-wrap:wrap;align-items:baseline;margin-bottom:8px}
-.rv-head h3{margin:0;font-size:16px}.rv-board{color:var(--soft);font-size:13px;display:inline;width:auto;height:auto;padding:0;border:0;background:none}
-.rv-pick{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:baseline;font-size:15px;margin:0 0 4px}
-.rv-pick dt{color:var(--soft);font-size:13px;white-space:nowrap}.rv-pick dd{margin:0;min-width:0;overflow-wrap:anywhere}.rv-pick .pc{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
-.rv-verdict{font-size:13.5px;margin:8px 0 0}.rv-verdict.bad{color:var(--bad,#963a32)}.rv-verdict.ok{color:var(--good,#245f33)}
-.rv-step details{margin:10px 0 0}.rv-step summary{font-size:13.5px;width:auto;max-width:100%}
-.rv-scroll{overflow-x:auto;margin-top:8px}
-.rv-table{border-collapse:collapse;width:100%;font-size:13px;min-width:560px;overflow-wrap:normal}
-.rv-table th:first-child{min-width:170px}.rv-table th:not(:first-child){min-width:84px}.rv-table thead th:nth-child(n+4){min-width:170px}
-.rv-table th,.rv-table td{border-top:1px solid var(--line);padding:6px 8px;text-align:right;vertical-align:top;font-variant-numeric:tabular-nums}
-.rv-table th:first-child,.rv-table td:first-child{text-align:left}
-.rv-table thead th{border-top:0;color:var(--soft);font-weight:500;font-size:12px;line-height:1.35}
-.rv-table tr.you td:first-child{box-shadow:inset 3px 0 0 var(--accent);padding-left:10px}
-.rv-log{font-size:13px;color:var(--soft);margin:8px 0 0;padding-left:18px}.rv-log li{margin:2px 0}
-.rv-note{font-size:13px;color:var(--soft)}
-#rv-progress{width:100%;max-width:none}
-@media(max-width:560px){.rv-pick{grid-template-columns:1fr auto}.rv-pick dt{grid-column:1/-1;margin-top:4px}}
-</style></head><body><main class="rv">
-<div class="rv-top"><a href="./#play">← Games</a><a href="./battle.html">Play Discharge</a></div>
-<h1>Game review</h1>
-<p class="lead">Pick a finished Champions VGC game. Discharge replays it and shows, turn by turn, what it would have played in your seat and how much each choice cost you. Nothing here is shown during a game.</p>
-<section class="rv-box" aria-labelledby="rv-games-title"><h2 id="rv-games-title">Your recent games</h2><ul class="rv-games" id="rv-games"></ul><p class="rv-note" id="rv-empty" hidden>No saved games yet. Finish a Champions VGC game against Discharge and it will show up here. The last 8 games are kept in this browser.</p></section>
-<section class="rv-box" id="rv-status" hidden><p id="rv-status-text" role="status" aria-live="polite" style="margin:0 0 8px"></p><progress id="rv-progress" max="100" value="0"></progress></section>
-<section class="rv-box" id="rv-summary" hidden aria-labelledby="rv-summary-title"><h2 id="rv-summary-title">Your win chance, decision by decision</h2><div class="rv-stats" id="rv-stats"></div><div class="rv-chart" id="rv-chart"></div><div class="rv-legend"><span><i></i>Win chance after your choice</span><span><i class="miss"></i>Choice that cost 10 points or more</span></div><div id="rv-mistakes"></div><p class="rv-note" style="margin:12px 0 0">Win chance is Discharge’s own estimate from its search, using only what you could see at the time. Treat it as a guide, not an exact number.</p></section>
-<div id="rv-steps"></div>
+/* Replay viewer on top (Showdown screen + controls), win-chance strip, then the bot's thinking per decision. */
+:root{--bg:#f4f5f7;--card:#ffffff;--card2:#eceef2;--ink:#16181c;--soft:#5d6470;--line:#d6d9e0;--accent:#2f6fe4;--good:#14803c;--bad:#c2372b;--pill:#e6f4ea;
+  font:15px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink)}
+@media(prefers-color-scheme:dark){:root{--bg:#111214;--card:#1c1d21;--card2:#25262b;--ink:#f1f2f4;--soft:#a3a8b3;--line:#33353b;--accent:#4f8df7;--good:#35c26a;--bad:#ff7a6b;--pill:#123222;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink)}
+.wrap{max-width:760px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-left,0px)) 60px max(16px,env(safe-area-inset-right,0px));display:grid;gap:14px}
+a{color:var(--accent)}
+.top{display:flex;gap:18px;font-size:17px}
+h1{font-size:24px;line-height:1.2;margin:0}
+.sub{color:var(--soft);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chip{display:inline-block;border:1.5px solid currentColor;border-radius:99px;padding:0 10px;font-size:14px;line-height:1.6}
+.chip.win{color:var(--good)}.chip.loss{color:var(--bad)}
+.games{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.games button{flex:none;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}
+.games button[aria-current=true]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.player{background:var(--card2);border-radius:12px;overflow:hidden}
+.fitbox{position:relative;overflow:hidden;width:100%;height:360px}.frame{position:absolute;top:0;left:0;width:640px;height:360px}
+.sdbar{display:flex;gap:4px;flex-wrap:wrap;padding:6px}
+.sdbar button{font:12px Verdana,sans-serif;padding:3px 9px;border-radius:5px;border:1px solid #888;background:linear-gradient(#f6f6f6,#dcdcdc);color:#222;cursor:pointer}
+.sdbar button[aria-pressed=true]{background:linear-gradient(#ccc,#eee)}
+.sdbar .grp{display:flex;gap:2px;align-items:center;font:11px Verdana,sans-serif;color:var(--soft);border:1px solid var(--line);border-radius:5px;padding:2px 4px}
+.sdbar .grp button{padding:1px 6px;font-size:11px}
+.hidelog{display:none}
+.chart{background:var(--card2);border-radius:12px;padding:8px 8px 4px;position:relative}
+.chart svg{display:block;width:100%;height:auto;cursor:pointer}
+.chart .ln{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
+.chart .mid{stroke:var(--soft);stroke-dasharray:4 5;stroke-width:1}
+.chart .cur{stroke:var(--ink);stroke-width:2}
+.chart .miss{fill:var(--card2);stroke:var(--bad);stroke-width:2.5}
+.legend{display:flex;justify-content:space-between;color:var(--soft);font-size:14px}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent);margin-right:8px}
+.nav{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.nav button{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:14px 4px;font:inherit;font-size:17px;cursor:pointer}
+.nav button:focus-visible,.games button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h2{font-size:19px;margin:8px 0 0}
+.pill{display:inline-block;background:var(--card2);color:var(--soft);border-radius:99px;padding:2px 12px;font-size:14px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}.stat b{display:block;font-size:22px}.stat span{color:var(--soft);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:10px;scroll-margin-top:12px}
+.card.now{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.card .hd{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.k{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.big{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.big .play{font-size:16px;line-height:1.4}.big .play b{display:block;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);font-weight:700}
+.big .pc{font-size:40px;font-weight:800;line-height:1;text-align:right}.big .pc small{display:block;white-space:nowrap;font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--soft)}
+.verdict{margin:0}.verdict.bad{color:var(--bad)}.verdict.good{color:var(--good)}
+.why{margin:0;color:var(--soft)}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+th{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);font-weight:700;text-align:right;padding:6px}
+th:first-child,td:first-child{text-align:left}
+td{border-top:1px solid var(--line);padding:8px 6px;text-align:right;font-variant-numeric:tabular-nums;vertical-align:top}
+tr.best td:first-child::before{content:'▸ ';color:var(--accent)}
+tr.you td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.status{color:var(--soft)}
+progress{width:100%}
+.empty{color:var(--soft)}
+@media(max-width:520px){.stat b{font-size:19px}.stat{padding:8px 10px}.big .pc{font-size:34px}}
+</style>
+<script src="/config/config.js"></script><script src="/js/lib/jquery-2.2.4.min.js"></script><script src="/js/battle-sound.js"></script><script src="/js/lib/html-css-sanitizer-minified.js"></script><script src="/js/lib/lodash.core.js"></script>
+<script src="/data/text/en.js"></script><script src="/js/battledata.js"></script><script src="/js/oldclient/storage.js"></script><script src="/data/pokedex-mini.js"></script><script src="/data/typechart.js"></script><script src="/data/pokedex.js"></script><script src="/data/moves.js"></script><script src="/js/battle.js"></script><script src="/js/battle-tooltips.js"></script>
+<script src="/js/battle-animations.js"></script><script src="/js/battle-animations-moves.js"></script><script src="/data/offline-resource-fallbacks.js"></script><script src="/showdown-scene.js"></script>
+</head><body><main class="wrap">
+<div class="top"><a href="./#play">← Games</a><a href="./battle.html">Play Discharge</a></div>
+<div><h1 id="rv-title">Game review</h1><div class="sub" id="rv-sub">Pick a finished Champions game below.</div></div>
+<div class="games" id="rv-games" aria-label="Your recent games"></div>
+<p class="empty" id="rv-empty" hidden>No saved games yet. Finish a Champions VGC game against Discharge and it shows up here (the last 8 are kept in this browser).</p>
+<section class="player" id="rv-player" hidden aria-label="Replay">
+  <div class="fitbox"><div class="frame" id="rv-frame"></div></div>
+  <div class="hidelog"><div class="battle-log" id="rv-log"></div></div>
+  <div class="sdbar">
+    <button type="button" id="sd-play">▶ Play</button><button type="button" id="sd-first">⏮ First turn</button><button type="button" id="sd-prev">⏴ Last turn</button><button type="button" id="sd-next">Next turn ⏵</button><button type="button" id="sd-end">⏭ End</button><button type="button" id="sd-sides">⇄ Switch sides</button>
+    <span class="grp">Speed: <button type="button" data-speed="fast">Fast</button><button type="button" data-speed="normal" aria-pressed="true">Normal</button><button type="button" data-speed="slow">Slow</button></span>
+  </div>
+</section>
+<section id="rv-status" hidden><p class="status" id="rv-status-text" role="status" aria-live="polite"></p><progress id="rv-progress" max="100" value="0"></progress></section>
+<section id="rv-chartbox" hidden>
+  <div class="chart" id="rv-chart"></div>
+  <div class="legend"><span><i></i>Your win chance (Discharge's estimate)</span><span>tap to jump to a turn</span></div>
+</section>
+<div class="nav" id="rv-nav" hidden><button type="button" id="nv-prev">◀ Turn</button><button type="button" id="nv-play">Play</button><button type="button" id="nv-next">Turn ▶</button><button type="button" id="nv-sides">⇄ Sides</button></div>
+<section id="rv-think" hidden>
+  <h2>Discharge's thinking for your seat</h2>
+  <p style="margin:6px 0 12px"><span class="pill">what it would have played in your place</span></p>
+  <div class="summary" id="rv-stats"></div>
+  <div id="rv-cards" style="display:grid;gap:14px;margin-top:14px"></div>
+</section>
+<p class="status" style="font-size:13px">Win chance is Discharge's own search estimate from what you could see at the time: a guide for comparing choices, not an exact number. Runs on this device.</p>
 </main><script src="./review.js"></script></body></html>
