@@ -33,5 +33,12 @@ jobs:
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
+          name: github-pages-${{ github.run_attempt }}
+      # The artifact can take a few seconds to appear in the deployment service
+      # even after the upload has finalized. Use a new name on a workflow retry.
+      - name: Wait for Pages artifact metadata
+        run: sleep 20
       - uses: actions/deploy-pages@v4
         id: deployment
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
