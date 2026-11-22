@@ -1,9 +1,9 @@
 {
-  "archive": "bot-updates/review-v5.zip",
-  "sha256": "a2c42e3fc11cba4527c982b150ef3d8c9a9f839fc6a56c406ac8d8fafd790094",
+  "archive": "bot-updates/review-v6.zip",
+  "sha256": "147126857ac98d522320c3289f0f1550234921c5bfcb9e21def76842ceb30c60",
   "botUpdate": {
     "sourceCommit": "f098078",
-    "updated": "2026-11-21",
+    "updated": "2026-11-22",
     "policy": "public-set response search for Very Strong RandBats",
     "otherFormats": "unchanged stable singles/doubles controllers",
     "browserAdapter": "static sprites, move animations on, silent",
@@ -13,7 +13,8 @@
     "switching": "No switch penalty: the Discharge search decides switches on its own",
     "randomBattle": "Very Strong Random Battles use a port of Foul Play (GPL-3.0) searching with poke-engine (MIT) compiled to WebAssembly; the previous bot is the fallback",
     "gameReview": "Finished Champions games are saved in the browser (last 8); review.html replays one in the Champions worker and shows, per decision, what Discharge would have played in the player seat, its win-chance estimate and the replies it expected",
-    "damageGame": "damage.html asks the Champions worker (calc message) for a position built from two pool teams and all 16 Showdown damage rolls of one move, for a guessing game"
+    "damageGame": "damage.html asks the Champions worker (calc message) for a position built from two pool teams and all 16 Showdown damage rolls of one move, for a guessing game",
+    "puzzles": "puzzle.html asks the Champions worker (puzzle message) for a mid-game position between two pool teams (open team sheets, quick bot plays the opening turns); the player picks moves, Discharge's search grades every option (puzzle-answer) and the turn plays out against a reply drawn from its expected replies"
   },
   "expectedWorkers": {
     "ai.worker.js": "dec75daabfb61afa9dc8ab5275cf0092677d4934728dc98222553bfc7116e834",
@@ -21,7 +22,7 @@
   },
   "championsWorker": {
     "file": "web/champions.worker.js",
-    "sha256": "cd92a72e6095307ed5ee9b7530373c5ca2a541b3d5d50b304df18130dfb3c463",
-    "builtFrom": "bot commit b9aca69 plus the game-review, damage-game and level changes in bot-updates/review-v5.zip, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
+    "sha256": "a35909011119db35ad8d47e9df555b374065e7f8a5c129b2093d0d2469195b4b",
+    "builtFrom": "bot commit b9aca69 plus the game-review, damage-game, puzzle and level changes in bot-updates/review-v6.zip, scripts/build-champions-browser.mjs, Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }

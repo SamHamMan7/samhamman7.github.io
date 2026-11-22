@@ -16,24 +16,30 @@
   const natureText = n => NATURE[n] ? `${n} (+${LABEL[NATURE[n][0]]}, −${LABEL[NATURE[n][1]]})` : (n || 'Neutral');
   const boostText = b => Object.entries(b || {}).map(([k, v]) => `${v > 0 ? '+' : ''}${v} ${LABEL[k] || k}`).join(', ');
 
+  const chip = (text, cls = '') => el('span', 'chip ' + cls, text);
   function setCard(m, role, keys) {
-    const box = el('div', 'set'); box.append(el('h3', '', `${role}: ${m.species}`));
-    const line = t => { if (t) box.append(el('p', '', t)); };
-    line(`${m.types.join('/')} · ${m.item || 'no item'} · ${m.ability}`);
-    line(`${natureText(m.nature)} · ${keys.map(k => `${m.stats[k]} ${LABEL[k]}`).join(' · ')}`);
-    line(boostText(m.boosts) && `Boosts: ${boostText(m.boosts)}`);
+    const box = el('div', 'set'); box.append(el('div', 'role', role), el('h3', '', m.species + (m.mega && !/-Mega/.test(m.species) ? ' (Mega)' : '')));
+    const types = el('div', 'chips'); for (const t of m.types) types.append(chip(t, 'type t-' + t)); box.append(types);
+    box.append(el('p', '', `${m.item || 'No item'} · ${m.ability}`), el('p', '', natureText(m.nature)));
+    const kv = el('div', 'kv'); for (const k of keys) { const x = el('span'); x.append(el('b', '', String(m.stats[k])), document.createTextNode(' ' + LABEL[k])); kv.append(x); } box.append(kv);
+    if (boostText(m.boosts)) box.append(el('p', '', 'Boosts: ' + boostText(m.boosts)));
     return box;
   }
 
   function render() {
-    battle = window.ShowdownScene ? window.ShowdownScene.show($id('dg-frame'), $id('dg-log'), q.log) : null;
+    battle = window.ShowdownScene ? window.ShowdownScene.show($id('dg-frame'), $id('dg-log'), q.log, { maxScale: 1.6 }) : null;
     const physical = q.move.category === 'Physical';
-    $id('dg-what').replaceChildren(document.createTextNode(`How much does ${q.attacker.species}'s `), el('span', 'movebtn', `${q.move.name}`), document.createTextNode(` do to ${q.defender.species}?`));
-    const tags = [`${q.move.type} · ${q.move.category} · ${q.move.basePower} BP`, q.move.spread && 'hits both foes (×0.75)', q.crit && 'CRITICAL HIT', q.attacker.mega && 'Mega Evolved'].filter(Boolean).join(' · ');
-    $id('dg-what').append(el('span', 'small', ' ' + tags));
-    $id('dg-sets').replaceChildren(setCard(q.attacker, 'Attacker', [physical ? 'atk' : 'spa']), setCard(q.defender, 'Defender', ['hp', physical ? 'def' : 'spd']));
+    $id('dg-what').replaceChildren(document.createTextNode(`How much does ${q.attacker.species}'s `), el('span', 'mv', q.move.name), document.createTextNode(` do to ${q.defender.species}?`));
+    const tags = $id('dg-tags'); tags.replaceChildren(chip(q.move.type, 'type t-' + q.move.type), chip(q.move.category), chip(q.move.basePower + ' BP'));
+    if (q.move.spread) tags.append(chip('Spread: hits both foes (×0.75)'));
+    if (q.attacker.mega) tags.append(chip('Mega Evolved'));
+    const WX = { RainDance: 'Rain', SunnyDay: 'Sun', Snowscape: 'Snow', DesolateLand: 'Harsh sun', PrimordialSea: 'Heavy rain' }; if (q.field.weather) tags.append(chip(WX[q.field.weather] || q.field.weather)); if (q.field.terrain) tags.append(chip(q.field.terrain));
+    for (const c of q.field.defenderSide || []) tags.append(chip('Defender: ' + c));
+    $id('dg-critbanner').hidden = !q.crit; $id('dg-critflag').hidden = !q.crit;
+    $id('dg-sets').replaceChildren(setCard(q.attacker, 'Attacker', [physical ? 'atk' : 'spa', 'spe']), setCard(q.defender, 'Defender', ['hp', physical ? 'def' : 'spd']));
     $id('dg-guess').hidden = false; $id('dg-result').hidden = true; locked = false; setGuess(50);
   }
+  for (const v of [10, 25, 33, 50, 66, 75, 100]) { const b = el('button', '', v + '%'); b.type = 'button'; b.addEventListener('click', () => setGuess(v)); $id('dg-quick').append(b); }
 
   function setGuess(v) { v = Math.max(0, Math.min(300, Math.round(Number(v) || 0))); $id('dg-range').value = Math.min(150, v); $id('dg-num').value = v; $id('dg-out').textContent = v + '%'; }
   $id('dg-range').addEventListener('input', e => setGuess(e.target.value));
@@ -59,19 +65,19 @@
     stats.played++; stats.total += score; stats.streak = off === 0 ? stats.streak + 1 : 0; saveStats(); showStats();
     $id('dg-guess').hidden = true;
     if (battle) window.ShowdownScene.play(battle, revealLines());
-    const box = $id('dg-result'); box.replaceChildren(); box.hidden = false; box.className = 'result ' + (off === 0 ? 'good' : off > 10 ? 'bad' : '');
+    const box = $id('dg-result'); box.replaceChildren(); box.hidden = false; box.className = 'result ' + (off === 0 ? 'good' : off > 10 ? 'bad' : 'ok');
     box.append(el('h2', '', off === 0 ? `Inside the range! +${score}` : `${Math.round(off * 10) / 10}% off · +${score}`));
-    box.append(el('p', '', `${q.move.name}: ${q.min}% – ${q.max}% (${q.rolls[0]}–${q.rolls[15]} of ${q.maxhp} HP). You guessed ${guess}%.`));
+    box.append(el('div', 'range', `${q.min}% – ${q.max}%`), el('p', '', `${q.move.name}${q.crit ? ' (critical hit)' : ''}: ${q.rolls[0]}–${q.rolls[15]} of ${q.maxhp} HP. You guessed ${guess}%.`));
     const top = Math.max(110, Math.ceil((Math.max(q.max, guess) + 10) / 10) * 10), pos = v => `${Math.min(100, v / top * 100)}%`;
     const bar = el('div', 'bar'), r = el('div', 'r'), ko = el('div', 'ko'), y = el('div', 'y');
     r.style.left = pos(q.min); r.style.width = `calc(${pos(q.max)} - ${pos(q.min)} + 2px)`; ko.style.left = pos(100); y.style.left = pos(guess); bar.append(r, ko, y); box.append(bar);
     box.append(el('p', 'small', 'Blue: the real range · red line: 100% · dark line: your guess.'));
     box.append(el('p', '', q.koRolls === 16 ? 'Guaranteed KO from full HP.' : q.koRolls ? `KOs from full HP on ${q.koRolls}/16 rolls.` : `${Math.ceil(100 / q.max)}HKO or worse from full HP.`));
-    box.append(el('p', 'small', 'Rolls (HP): ' + q.rolls.join(', ')));
-    const next = el('button', 'button go', 'Next'); next.type = 'button'; next.addEventListener('click', ask); box.append(next); next.focus({ preventScroll: true });
+    box.append(el('p', 'small rolls', 'Rolls (HP): ' + q.rolls.join(', ')));
+    const next = el('button', 'btn go', 'Next question'); next.type = 'button'; next.addEventListener('click', ask); box.append(next); next.focus({ preventScroll: true });
   }
 
-  function ask() { if (!worker) return; $id('dg-guess').hidden = true; $id('dg-result').hidden = true; $id('dg-what').textContent = 'Setting up…'; worker.postMessage({ type: 'calc', seed: crypto.getRandomValues(new Uint32Array(1))[0] || 1, crit: $id('dg-crit').checked }); }
+  function ask() { if (!worker) return; $id('dg-guess').hidden = true; $id('dg-result').hidden = true; $id('dg-what').textContent = 'Setting up…'; $id('dg-tags').replaceChildren(); $id('dg-critbanner').hidden = true; $id('dg-critflag').hidden = true; worker.postMessage({ type: 'calc', seed: crypto.getRandomValues(new Uint32Array(1))[0] || 1, crit: $id('dg-crit').checked }); }
 
   showStats();
   try {

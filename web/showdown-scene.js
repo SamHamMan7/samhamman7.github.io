@@ -19,11 +19,11 @@
 
   // Creates a battle view showing `lines` (a public Showdown protocol log) at its last turn.
   window.ShowdownScene = {
-    show(frame, log, lines) {
+    show(frame, log, lines, opts = {}) {
       frame.replaceChildren(); log.replaceChildren();
       const battle = new Battle({ $frame: $(frame), $logFrame: $(log), id: 'scene', log: lines.slice(), paused: true, autoresize: false });
       // Scale the fixed 640x360 screen to whatever width its box has (phones included).
-      const box = frame.parentElement, fit = () => { const k = Math.min(1, (box.clientWidth || 640) / 640); frame.style.transform = `scale(${k})`; frame.style.transformOrigin = 'top left'; box.style.height = Math.ceil(360 * k) + 'px'; };
+      const box = frame.parentElement, fit = () => { const k = Math.min(opts.maxScale || 1, (box.clientWidth || 640) / 640); frame.style.transform = `scale(${k})`; frame.style.transformOrigin = 'top left'; box.style.height = Math.ceil(360 * k) + 'px'; };
       fit(); if (!frame._fit) { frame._fit = fit; addEventListener('resize', () => frame._fit()); } else frame._fit = fit;
       battle.seekTurn(Infinity, true);
       return battle;
