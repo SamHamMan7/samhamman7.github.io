@@ -39,9 +39,16 @@
     $id('dg-sets').replaceChildren(setCard(q.attacker, 'Attacker', [physical ? 'atk' : 'spa', 'spe']), setCard(q.defender, 'Defender', ['hp', physical ? 'def' : 'spd']));
     $id('dg-guess').hidden = false; $id('dg-result').hidden = true; locked = false; setGuess(50);
   }
-  for (const v of [10, 25, 33, 50, 66, 75, 100]) { const b = el('button', '', v + '%'); b.type = 'button'; b.addEventListener('click', () => setGuess(v)); $id('dg-quick').append(b); }
+  const guessText = v => v === 150 ? '150%+' : v + '%';
+  for (const v of [10, 25, 33, 50, 66, 75, 100, 125, 150]) { const b = el('button', '', guessText(v)); b.type = 'button'; b.addEventListener('click', () => setGuess(v)); $id('dg-quick').append(b); }
 
-  function setGuess(v) { v = Math.max(0, Math.min(300, Math.round(Number(v) || 0))); $id('dg-range').value = Math.min(150, v); $id('dg-num').value = v; $id('dg-out').textContent = v + '%'; }
+  // Match the scoring domain: the last bucket means 150% or more.
+  function setGuess(v) {
+    const n = Number(v);
+    v = Number.isFinite(n) ? Math.max(0, Math.min(150, Math.round(n))) : 0;
+    $id('dg-range').value = v; $id('dg-num').value = v; $id('dg-out').textContent = guessText(v);
+    $id('dg-range').setAttribute('aria-valuetext', guessText(v));
+  }
   $id('dg-range').addEventListener('input', e => setGuess(e.target.value));
   $id('dg-num').addEventListener('input', e => setGuess(e.target.value));
   $id('dg-num').addEventListener('keydown', e => { if (e.key === 'Enter') lock(); });
@@ -61,17 +68,20 @@
 
   function lock() {
     if (!q || locked) return; locked = true;
-    const guess = Number($id('dg-num').value), off = guess < q.min ? q.min - guess : guess > q.max ? guess - q.max : 0, score = Math.max(0, Math.round(100 - 5 * off));
+    setGuess($id('dg-num').value);
+    const guess = Number($id('dg-num').value), min = Math.min(150, q.min), max = Math.min(150, q.max);
+    const off = guess < min ? min - guess : guess > max ? guess - max : 0, score = Math.max(0, Math.round(100 - 5 * off));
     stats.played++; stats.total += score; stats.streak = off === 0 ? stats.streak + 1 : 0; saveStats(); showStats();
     $id('dg-guess').hidden = true;
     if (battle) window.ShowdownScene.play(battle, revealLines());
     const box = $id('dg-result'); box.replaceChildren(); box.hidden = false; box.className = 'result ' + (off === 0 ? 'good' : off > 10 ? 'bad' : 'ok');
     box.append(el('h2', '', off === 0 ? `Inside the range! +${score}` : `${Math.round(off * 10) / 10}% off · +${score}`));
-    box.append(el('div', 'range', `${q.min}% – ${q.max}%`), el('p', '', `${q.move.name}${q.crit ? ' (critical hit)' : ''}: ${q.rolls[0]}–${q.rolls[15]} of ${q.maxhp} HP. You guessed ${guess}%.`));
+    box.append(el('div', 'range', `${q.min}% – ${q.max}%`), el('p', '', `${q.move.name}${q.crit ? ' (critical hit)' : ''}: ${q.rolls[0]}–${q.rolls[15]} of ${q.maxhp} HP. You guessed ${guessText(guess)}.`));
+    if (q.max >= 150) box.append(el('p', 'small', 'For scoring, damage above 150% counts as 150%. The full calculated range is shown above.'));
     const top = Math.max(110, Math.ceil((Math.max(q.max, guess) + 10) / 10) * 10), pos = v => `${Math.min(100, v / top * 100)}%`;
     const bar = el('div', 'bar'), r = el('div', 'r'), ko = el('div', 'ko'), y = el('div', 'y');
     r.style.left = pos(q.min); r.style.width = `calc(${pos(q.max)} - ${pos(q.min)} + 2px)`; ko.style.left = pos(100); y.style.left = pos(guess); bar.append(r, ko, y); box.append(bar);
-    box.append(el('p', 'small', 'Blue: the real range · red line: 100% · dark line: your guess.'));
+    box.append(el('p', 'small', 'Blue: the real range · red line: 100% · dark line: your guess.' + (guess === 150 ? ' The dark line marks the start of your 150%+ bucket.' : '')));
     box.append(el('p', '', q.koRolls === 16 ? 'Guaranteed KO from full HP.' : q.koRolls ? `KOs from full HP on ${q.koRolls}/16 rolls.` : `${Math.ceil(100 / q.max)}HKO or worse from full HP.`));
     box.append(el('p', 'small rolls', 'Rolls (HP): ' + q.rolls.join(', ')));
     const next = el('button', 'btn go', 'Next question'); next.type = 'button'; next.addEventListener('click', ask); box.append(next); next.focus({ preventScroll: true });

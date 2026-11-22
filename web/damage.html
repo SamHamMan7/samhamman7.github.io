@@ -16,7 +16,7 @@
 <script src="/data/text/en.js"></script><script src="/js/battledata.js"></script><script src="/js/oldclient/storage.js"></script><script src="/data/pokedex-mini.js"></script><script src="/data/typechart.js"></script><script src="/data/pokedex.js"></script><script src="/data/moves.js"></script><script src="/js/battle.js"></script><script src="/js/battle-tooltips.js"></script>
 <script src="/js/battle-animations.js"></script><script src="/js/battle-animations-moves.js"></script><script src="/data/offline-resource-fallbacks.js"></script><script src="/showdown-scene.js"></script>
 </head><body><main class="wrap">
-<div class="top"><a href="./#play">← Games</a><h1>Damage guess</h1>
+<div class="top"><a href="./#play">← Games</a><h1>Damage guess</h1><a href="./puzzle.html">What would you do?</a>
  <div class="stats"><div class="stat"><b id="dg-played">0</b>played</div><div class="stat"><b id="dg-avg">–</b>avg score</div><div class="stat"><b id="dg-streak">0</b>in a row</div></div>
  <label class="toggle"><input type="checkbox" id="dg-crit" checked> Include crits</label></div>
 <div class="main">
@@ -26,8 +26,9 @@
   <div class="chips" id="dg-tags"></div>
   <div class="crit" id="dg-critbanner" hidden>Critical hit <small>1.5× damage · ignores the defender's boosts and screens</small></div>
   <div class="guess" id="dg-guess" hidden>
-   <div class="dial"><output id="dg-out">50%</output><span class="muted">of its max HP</span><input type="number" id="dg-num" min="0" max="300" value="50" aria-label="Guess in percent"></div>
-   <input type="range" id="dg-range" min="0" max="150" value="50" aria-label="Damage guess">
+   <div class="dial"><output id="dg-out">50%</output><span class="muted">of its max HP</span><input type="number" id="dg-num" min="0" max="150" step="1" value="50" aria-label="Guess in percent" aria-describedby="dg-hint"></div>
+   <input type="range" id="dg-range" min="0" max="150" step="1" value="50" aria-label="Damage guess">
+   <p class="small" id="dg-hint">150%+ means 150% or more. Higher damage rolls count as 150% for scoring.</p>
    <div class="quick" id="dg-quick"></div>
    <button class="btn go" type="button" id="dg-lock">Lock in</button>
   </div>
