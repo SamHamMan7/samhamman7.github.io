@@ -262,3 +262,9 @@ button[type=submit]:hover,#download-offline:hover,.primary:hover,.button.primary
 .gr-detail .gr-pct{font-variant-numeric:tabular-nums}.gr-table tbody tr:hover td{background:color-mix(in srgb,var(--tint) 45%,transparent)}
 @media(max-width:640px){.gr-hero{padding:18px;border-radius:16px}.gr-hero-avg{font-size:44px}.gr-hero-stats{width:100%}.gr-hero-stat{flex:1 1 40%;min-width:0}.gr-classes{grid-template-columns:1fr}}
 .gr-ring.g-A,.gr-ring.g-B,.gr-ring.g-C,.gr-ring.g-F,.gr-ring{color:var(--ink)}
+
+/* A single passphrase is the dashboard entry point. */
+.intro{display:grid;grid-template-columns:minmax(0,420px);justify-content:center;align-content:center;gap:0}
+.intro-card h1{margin:0 0 18px;font-size:clamp(24px,6vw,32px);line-height:1.15}
+.intro-body>.linkish{display:block;margin-top:12px}
+.intro-card .lock-msg:empty{display:none}

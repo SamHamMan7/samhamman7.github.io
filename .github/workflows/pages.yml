@@ -27,8 +27,8 @@ jobs:
         run: node verify-offline.mjs
       - name: Check math practice
         run: node verify-practice.mjs
-      - name: Check damage guesses and puzzle controls
-        run: node --test tests/mini-games.test.mjs
+      - name: Check practice games and the dashboard passphrase
+        run: node --test tests/*.test.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
