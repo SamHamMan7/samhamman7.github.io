@@ -1,109 +1,177 @@
-// "What would you do?": the Champions worker sets up a mid-game position (two pool teams,
-// open team sheets), the player picks a move for each Pokémon, then Discharge's search grades
-// every option and the turn plays out in the Showdown battle screen.
-(() => {
-  const $id = id => document.getElementById(id);
-  const el = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; return x; };
-  const KEY = 'puzzle-stats';
-  let stats = { played: 0, best: 0, loss: 0 };
-  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && Number.isFinite(s.played)) stats = s; } catch {}
-  const saveStats = () => { try { localStorage.setItem(KEY, JSON.stringify(stats)); } catch {} };
-  const showStats = () => { $id('pz-played').textContent = stats.played; $id('pz-best').textContent = stats.best; $id('pz-avg').textContent = stats.played ? (Math.round(stats.loss / stats.played * 10) / 10) + '%' : '–'; };
+// The official BattleRoom owns the battlefield, choices and targets. This
+// adapter substitutes a single local puzzle worker for the Showdown socket.
+import {parsePuzzleChoice} from './puzzle-choice.js';
 
-  const TYPE = { Normal: '#9a9a7a', Fire: '#ef7f30', Water: '#5b8ef0', Electric: '#e2b71a', Grass: '#62b743', Ice: '#6cc9c9', Fighting: '#c22f28', Poison: '#9d40a0', Ground: '#d4ac52', Flying: '#9a85ec', Psychic: '#f25483', Bug: '#a1b220', Rock: '#b49a3a', Ghost: '#6d5797', Dragon: '#6a3cf3', Dark: '#6d574a', Steel: '#9b9bbd', Fairy: '#e486ad' };
-  const moveOf = label => label.replace(/^Mega \+ /, '').split(' → ')[0];
-  const moveInfo = name => { try { const m = window.Dex?.moves.get(name); return m?.exists ? m : null; } catch { return null; } };
-  const hpText = c => { if (!c) return ''; if (/ fnt$/.test(c) || c === '0 fnt') return 'fainted'; const [a, b] = c.split(' ')[0].split('/').map(Number); return b ? Math.max(1, Math.round(a / b * 100)) + '%' : c; };
+const roomElement = document.getElementById('puzzle-room');
+const roomId = 'battle-offline-puzzle';
+const storageKey = 'puzzle-stats';
+let stats = {played: 0, best: 0, loss: 0};
+try {
+  const saved = JSON.parse(localStorage.getItem(storageKey));
+  if (saved && Number.isFinite(saved.played) && Number.isFinite(saved.best) && Number.isFinite(saved.loss)) stats = saved;
+} catch {}
 
-  let worker = null, pz = null, battle = null, picks = [], busy = false;
+const element = (tag, text, className) => {
+  const node = document.createElement(tag);
+  if (text) node.textContent = text;
+  if (className) node.className = className;
+  return node;
+};
+function button(text, action) {
+  const node = element('button', text, 'button');
+  node.type = 'button';
+  node.addEventListener('click', action);
+  return node;
+}
 
-  function teamList(box, mons, mine) {
-    box.replaceChildren();
-    for (const m of mons) {
-      const row = el('div', 'mon' + (mine && /fnt/.test(m.condition) ? ' out' : '') + (mine && m.active ? ' on' : ''));
-      const left = el('div'); left.append(el('b', '', m.species)); left.append(el('div', 'small', `${m.item || 'No item'} · ${m.ability}`));
-      row.append(left, el('span', '', (mine ? hpText(m.condition) + ' · ' : '') + m.moves.join(', ')));
-      box.append(row);
-    }
-  }
+let worker, room, puzzle, feedback, requestId = 0, phase = 'loading';
+const newFeedback = () => {
+  const panel = element('section', '', 'puzzle-feedback');
+  panel.setAttribute('aria-live', 'polite');
+  return panel;
+};
 
-  // Options for one slot that still fit with what is picked in the other slots.
-  const fits = (slot, part) => pz.legal.some(c => { const ps = c.split(', '); return ps[slot] === part && picks.every((p, i) => i === slot || !p || ps[i] === p); });
+function paint() {
+  if (!room) return;
+  if (phase === 'choosing') return;
+  if (room.$controls[0]?.firstChild !== feedback) room.$controls.empty().append(feedback);
+}
 
-  function drawSlots() {
-    const box = $id('pz-slots'); box.replaceChildren();
-    pz.slots.forEach((opts, i) => {
-      const s = el('div', 'slot'), h = el('h3', '', pz.names[i] || 'Pokémon ' + (i + 1)), me = pz.you.find(m => m.active && m.species === pz.names[i]);
-      if (me) h.append(el('span', '', hpText(me.condition)));
-      const grid = el('div', 'opts'), rank = o => /^Switch/.test(o.label) ? 2 : /^Mega \+/.test(o.label) ? 1 : 0;
-      for (const o of [...opts].sort((a, b) => rank(a) - rank(b))) {
-        const b = el('button', 'opt'); b.type = 'button'; b.setAttribute('aria-pressed', String(picks[i] === o.part)); b.disabled = !fits(i, o.part);
-        const mv = moveInfo(moveOf(o.label));
-        if (/^Switch/.test(o.label)) b.style.setProperty('--tc', '#888'); else if (mv) b.style.setProperty('--tc', TYPE[mv.type] || '#888');
-        const [main, target] = o.label.split(' → ');
-        b.append(document.createTextNode(main));
-        if (target || (mv && !/^Switch/.test(o.label))) b.append(el('small', '', [target && '→ ' + target, mv && mv.category !== 'Status' && mv.basePower ? `${mv.type} · ${mv.basePower} BP` : mv ? mv.type + ' · status' : ''].filter(Boolean).join(' · ')));
-        b.addEventListener('click', () => { picks[i] = picks[i] === o.part ? null : o.part; for (let j = 0; j < picks.length; j++) if (j !== i && picks[j] && !fits(j, picks[j])) picks[j] = null; drawSlots(); });
-        grid.append(b);
+function showStatus(text, retry = false) {
+  feedback = newFeedback();
+  feedback.append(element('p', text));
+  if (retry) feedback.append(button('Try another puzzle', ask));
+  if (room) paint();
+  else roomElement.replaceChildren(feedback);
+}
+
+function send(message, id) {
+  if (id !== roomId || phase !== 'choosing' || !message.startsWith('/choose ')) return;
+  const choice = parsePuzzleChoice(message, requestId, puzzle.legal);
+  if (!choice) {
+    // The pinned room may generate an unavailable command as the active
+    // list changes. Reset its actual choice builder after endTurn() finishes.
+    queueMicrotask(() => {
+      if (phase === 'choosing') {
+        room.clearChoice();
+        window.alert('That combination is unavailable. Choose another play.');
       }
-      s.append(h, grid); box.append(s);
     });
-    $id('pz-lock').disabled = !(picks.every(Boolean) && pz.legal.includes(picks.join(', ')));
+    return;
   }
+  phase = 'grading';
+  queueMicrotask(() => showStatus('Discharge is checking your play…'));
+  worker.postMessage({type: 'puzzle-answer', choice});
+}
 
-  function render() {
-    battle = window.ShowdownScene ? window.ShowdownScene.show($id('pz-frame'), $id('pz-log'), pz.log, { maxScale: 1.6 }) : null;
-    $id('pz-what').textContent = `Turn ${pz.turn}: what do you do? Their ${pz.foeActive.filter(Boolean).join(' and ')} are in.`;
-    picks = pz.slots.map(o => o.length === 1 ? o[0].part : null);
-    teamList($id('pz-you'), pz.you, true); teamList($id('pz-theirs'), pz.theirs, false);
-    $id('pz-pick').hidden = false; $id('pz-wait').hidden = true; $id('pz-result').hidden = true; busy = false;
-    drawSlots();
-  }
+// BattleRoom's shared App hooks only. There is no App connection, chat input
+// or account operation inside the puzzle room.
+window.app = {
+  user: new Backbone.Model(),
+  topbar: {updateTabbar() {}},
+  roomTitleChanged() {},
+  dismissPopups() {},
+  addPopupMessage(message) { window.alert(message); },
+  send,
+};
+const PuzzleRoom = BattleRoom.extend({
+  initialize(data) {
+    this.id = roomId;
+    BattleRoom.prototype.initialize.call(this, data);
+  },
+  notifyRequest() {},
+  closeNotification() {},
+  updateControls() {
+    if (phase === 'choosing') return BattleRoom.prototype.updateControls.call(this);
+    paint();
+  },
+});
 
-  function grade(loss) { return loss <= 1 ? ['Best move!', 'good'] : loss <= 4 ? ['Good move', 'good'] : loss <= 10 ? ['Inaccuracy', 'ok'] : ['Mistake', 'bad']; }
+function render(position) {
+  if (position.request?.side?.id !== 'p1' || !position.request.active?.length) throw new Error('Missing puzzle player request');
+  const host = element('div', '', 'ps-room');
+  roomElement.replaceChildren(host);
+  puzzle = position;
+  phase = 'choosing';
+  room = new PuzzleRoom({el: host, nojoin: true, title: 'What would you do?'});
+  room.autoTimerActivated = true;
+  room.$options.hide();
+  room.updateLayout();
+  room.receive('|init|battle\n|title|What would you do?\n' + position.log.join('\n'));
+  room.receive('|request|' + JSON.stringify({...position.request, rqid: ++requestId, noCancel: true}));
+}
 
-  function showResult({ step, lines }) {
-    $id('pz-wait').hidden = true;
-    const box = $id('pz-result'); box.replaceChildren(); box.hidden = false;
-    if (step.error || step.yours.chance === undefined) {
-      box.className = 'result'; box.append(el('h2', '', 'Discharge could not grade this one'), el('p', 'muted', step.error || 'Your choice was not among the options it checked.'));
-    } else {
-      const loss = Math.max(0, step.loss || 0), [title, cls] = step.same ? ['Best move!', 'good'] : grade(loss);
-      stats.played++; stats.loss += loss; if (step.same || loss <= 1) stats.best++; saveStats(); showStats();
-      box.className = 'result ' + cls; box.append(el('h2', '', title + (loss > 1 ? ` (−${loss}%)` : '')));
-      const vs = el('div', 'vs'), card = (k, label, pc) => { const d = el('div'); d.append(el('b', '', k), el('div', 'pc', pc + '%'), el('div', 'small', label)); return d; };
-      vs.append(card('You played', step.yours.label, step.yours.chance), card("Discharge's pick", step.bot.label, step.bot.chance)); box.append(vs);
-      const t = el('table'), head = el('tr'); for (const h of ['Option', 'Win chance']) head.append(el('th', '', h)); t.append(head);
-      for (const r of step.rows || []) { const tr = el('tr', (r.you ? 'you ' : '') + (r.chance === step.bot.chance ? 'best' : '')); tr.append(el('td', '', r.label + (r.you ? ' (you)' : '')), el('td', '', r.chance + '%')); t.append(tr); }
-      box.append(t);
-      if (step.replies?.length) { box.append(el('p', 'small', 'Replies Discharge expected: ' + step.replies.map(r => `${r.label} (${r.share}%)`).join(' · '))); }
+function showResult({step, lines}) {
+  if (phase !== 'grading') return;
+  phase = 'result';
+  feedback = newFeedback();
+  if (step.bot?.label && Number.isFinite(step.bot.chance)) {
+    feedback.append(element('h3', 'Discharge recommends'));
+    feedback.append(element('p', step.bot.label, 'broadcast-blue'));
+    if (Number.isFinite(step.yours?.chance)) {
+      const loss = Math.max(0, step.loss || 0);
+      stats.played++;
+      stats.loss += loss;
+      if (step.same || loss <= 1) stats.best++;
+      try { localStorage.setItem(storageKey, JSON.stringify(stats)); } catch {}
+      feedback.append(element('p', `You played ${step.yours.label}.`));
+      feedback.append(element('p', `Estimated win chance: your play ${step.yours.chance}%, Discharge’s pick ${step.bot.chance}%.`));
     }
-    box.append(el('p', 'muted', 'Playing out the turn: your move against a reply drawn from what Discharge expected.'));
-    if (battle && lines?.length) window.ShowdownScene.play(battle, lines);
-    const next = el('button', 'btn go', 'Next puzzle'); next.type = 'button'; next.addEventListener('click', ask); box.append(next);
+    if (step.rows?.length) {
+      const details = element('details');
+      details.append(element('summary', 'Other options Discharge checked'));
+      const list = element('ul');
+      for (const row of step.rows) list.append(element('li', `${row.label} · ${row.chance}% estimated win chance`));
+      details.append(list);
+      feedback.append(details);
+    }
+  } else {
+    feedback.append(element('p', step.error || 'Discharge could not grade this position.'));
   }
-
-  $id('pz-lock').addEventListener('click', () => {
-    if (!pz || busy) return; const choice = picks.join(', '); if (!pz.legal.includes(choice)) return;
-    busy = true; $id('pz-pick').hidden = true; $id('pz-wait').hidden = false; worker.postMessage({ type: 'puzzle-answer', choice });
-  });
-
-  function ask() {
-    if (!worker) return; busy = true; $id('pz-pick').hidden = true; $id('pz-result').hidden = true; $id('pz-wait').hidden = true;
-    $id('pz-what').textContent = 'Setting up a position…';
-    worker.postMessage({ type: 'puzzle', seed: crypto.getRandomValues(new Uint32Array(1))[0] || 1 });
+  feedback.append(button('Next puzzle', ask));
+  paint();
+  room.request = null;
+  room.side = '';
+  if (lines?.length) {
+    room.battle.play();
+    room.add(lines.join('\n'));
   }
+}
 
-  showStats();
-  try {
-    worker = new Worker(new URL('./champions.worker.js', location.href), { type: 'module' });
-    worker.onerror = e => { $id('pz-what').textContent = 'The simulator could not load: ' + (e.message || 'unknown error') + '.'; };
-    worker.onmessage = ({ data }) => {
+function ask() {
+  phase = 'loading';
+  if (room) {
+    room.battle.subscribe(null);
+    room.battle.scene.stopAnimation();
+    room.battle.destroy();
+    room.remove();
+    room = null;
+  }
+  showStatus('Setting up a position…');
+  worker.postMessage({type: 'puzzle', seed: crypto.getRandomValues(new Uint32Array(1))[0] || 1});
+}
+
+function showError(error) {
+  phase = 'error';
+  showStatus(error, !!worker);
+}
+
+try {
+  worker = new Worker(new URL('./champions.worker.js', import.meta.url), {type: 'module'});
+  worker.onerror = () => showError('Could not load the puzzle simulator. Reload to try again.');
+  worker.onmessage = ({data}) => {
+    try {
       if (data.type === 'ready') ask();
-      else if (data.type === 'puzzle') { pz = data.puzzle; try { render(); } catch (e) { $id('pz-what').textContent = 'Could not draw the battle: ' + e.message; } }
+      else if (data.type === 'puzzle') render(data.puzzle);
       else if (data.type === 'puzzle-result') showResult(data.result);
-      else if (data.type === 'error') { $id('pz-wait').hidden = true; $id('pz-what').textContent = 'Something went wrong: ' + data.message + '.'; const b = el('button', 'btn', 'Try another'); b.type = 'button'; b.addEventListener('click', ask); $id('pz-result').replaceChildren(b); $id('pz-result').hidden = false; }
-    };
-  } catch { $id('pz-what').textContent = 'This browser cannot run the simulator here.'; }
-  Object.defineProperty(window, 'puzzleGame', { value: { puzzle: () => pz, picks: () => picks } });
-})();
+      else if (data.type === 'error') showError(data.message);
+    } catch (error) {
+      showError(error.message);
+    }
+  };
+} catch {
+  showError('This browser could not start the puzzle simulator.');
+}
+
+addEventListener('resize', () => room?.updateLayout());
+addEventListener('pagehide', () => worker?.terminate());

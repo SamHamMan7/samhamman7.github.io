@@ -1,38 +1,66 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#ffb81c"><title>Puzzles · my site</title><link rel="icon" href="./site-icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/style/battle.css"><link rel="stylesheet" href="/style/sim-types.css"><link rel="stylesheet" href="/style/font-awesome.css"><link rel="stylesheet" href="./sd-game.css">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'">
+<title>What would you do? · Pokémon Showdown</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/style/battle.css">
+<link rel="stylesheet" href="/style/oldclient.css">
+<link rel="stylesheet" href="/style/sim-types.css">
+<link rel="stylesheet" href="/style/utilichart.css">
+<link rel="stylesheet" href="/style/font-awesome.css">
 <style>
-.slot{display:grid;gap:8px}
-.slot h3{margin:0;font-size:16px;display:flex;justify-content:space-between;gap:8px}.slot h3 span{color:var(--soft);font-weight:600;font-size:14px}
-.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
-.opt{font:600 14px/1.25 system-ui,sans-serif;text-align:left;padding:9px 10px;border-radius:10px;border:1px solid var(--line);border-left:5px solid var(--tc,#888);background:var(--panel2);color:var(--ink);cursor:pointer;min-height:44px}
-.opt[aria-pressed=true]{background:color-mix(in srgb,var(--accent) 20%,var(--panel2));border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
-.opt:disabled{opacity:.35;cursor:default}
-.opt small{display:block;font-weight:500;color:var(--soft);font-size:12px}
-.vs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.vs>div{background:var(--panel2);border-radius:12px;padding:10px 12px}.vs b{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft)}.vs .pc{font-size:30px;font-weight:900;line-height:1.1}
-table{width:100%;border-collapse:collapse;font-size:14px}th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);text-align:right;padding:4px 6px}th:first-child,td:first-child{text-align:left}
-td{border-top:1px solid var(--line);padding:7px 6px;text-align:right;font-variant-numeric:tabular-nums;vertical-align:top}tr.you td{background:color-mix(in srgb,var(--accent) 12%,transparent)}tr.best td:first-child{font-weight:700}
-.pz-team{display:grid;gap:6px}.pz-team .mon{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:6px;font-size:14px}.pz-team .mon:first-of-type{border-top:0}.pz-team .mon b{font-size:15px}.pz-team .mon span{color:var(--soft);text-align:right}
-.mon.out{opacity:.5}.mon.on b::after{content:' · in battle';color:var(--accent);font-weight:600;font-size:12px}
-progress{width:100%}
-@media(max-width:520px){.vs .pc{font-size:24px}.opts{grid-template-columns:1fr 1fr}}
+.puzzle-header{display:flex;align-items:center;gap:.8rem;padding:0 .65rem;height:49px;white-space:nowrap}
+.puzzle-header strong{overflow:hidden;text-overflow:ellipsis}
+.puzzle-header img{display:block}
+#puzzle-room{position:absolute;inset:50px 0 0;overflow:auto}
+#puzzle-room>.ps-room{inset:0}
+#puzzle-room .battle-log{bottom:0}
+#puzzle-room .battle-log-add,#puzzle-room .battle-userlist,#puzzle-room .timerbutton{display:none}
+.puzzle-feedback{padding:4px 10px 12px;max-width:40em}
+.puzzle-feedback p{margin:.55em 0}
+.puzzle-feedback summary{cursor:pointer}
+.puzzle-feedback .button{margin-top:.5em}
+@media(max-width:520px){.puzzle-header img{width:101px;height:auto}.puzzle-header{gap:.45rem}}
 </style>
-<script src="/config/config.js"></script><script src="/js/lib/jquery-2.2.4.min.js"></script><script src="/js/battle-sound.js"></script><script src="/js/lib/html-css-sanitizer-minified.js"></script><script src="/js/lib/lodash.core.js"></script>
-<script src="/data/text/en.js"></script><script src="/js/battledata.js"></script><script src="/js/oldclient/storage.js"></script><script src="/data/pokedex-mini.js"></script><script src="/data/typechart.js"></script><script src="/data/pokedex.js"></script><script src="/data/moves.js"></script><script src="/js/battle.js"></script><script src="/js/battle-tooltips.js"></script>
-<script src="/js/battle-animations.js"></script><script src="/js/battle-animations-moves.js"></script><script src="/data/offline-resource-fallbacks.js"></script><script src="/showdown-scene.js"></script>
-</head><body><main class="wrap">
-<div class="top"><a href="./#play">← Games</a><h1>What would you do?</h1><a href="./damage.html">Damage guess</a>
- <div class="stats"><div class="stat"><b id="pz-played">0</b>played</div><div class="stat"><b id="pz-best">0</b>best moves</div><div class="stat"><b id="pz-avg">–</b>avg loss</div></div></div>
-<div class="main">
- <div class="scene"><div class="fitbox"><div class="frame" id="pz-frame"></div></div></div>
- <section class="panel" aria-live="polite">
-  <p class="ask" id="pz-what">Loading the simulator…</p>
-  <div id="pz-pick" hidden style="display:grid;gap:14px"><div id="pz-slots" style="display:grid;gap:14px"></div><button class="btn go" type="button" id="pz-lock" disabled>Lock in</button></div>
-  <div id="pz-wait" hidden><p class="muted" style="margin:0 0 6px">Discharge is checking every option…</p><progress></progress></div>
-  <div class="result" id="pz-result" hidden></div>
- </section>
+</head>
+<body>
+<header class="header puzzle-header">
+ <a href="./#play" aria-label="Games"><img src="/pokemonshowdownbeta.png" width="146" height="44" alt="Pokémon Showdown"></a>
+ <strong>What would you do?</strong>
+ <a class="button" href="./damage.html">Damage guess</a>
+</header>
+<div id="puzzle-room" class="ps-room" aria-label="Puzzle battle">
+ <p role="status">Loading the battle…</p>
 </div>
-<div class="sets"><div class="set"><div class="role">Your team</div><div class="pz-team" id="pz-you"></div></div><div class="set"><div class="role">Their open team sheet</div><div class="pz-team" id="pz-theirs"></div></div></div>
-<details class="log"><summary>Battle log so far</summary><div class="battle-log" id="pz-log"></div></details>
-<p class="small">A position from a game between two teams from the bot's Champions pool (open team sheets). Pick a move for each of your Pokémon; Discharge's search then rates every option by win chance and the turn plays out against a reply it expected. Win chances are the bot's estimate, a guide rather than an exact number. Runs on this device, offline.</p>
-</main><script src="./puzzle.js"></script></body></html>
+<script src="/config/config.js"></script>
+<script src="/js/lib/jquery-2.2.4.min.js"></script>
+<script src="/js/battle-sound.js"></script>
+<script src="/js/lib/html-css-sanitizer-minified.js"></script>
+<script src="/js/lib/lodash.core.js"></script>
+<script src="/js/lib/backbone.js"></script>
+<script src="/data/text/en.js"></script>
+<script src="/js/battledata.js"></script>
+<script src="/js/oldclient/storage.js"></script>
+<script src="/data/pokedex-mini.js"></script>
+<script src="/data/typechart.js"></script>
+<script src="/data/pokedex.js"></script>
+<script src="/data/moves.js"></script>
+<script src="/data/items.js"></script>
+<script src="/data/abilities.js"></script>
+<script src="/js/battle.js"></script>
+<script src="/data/commands.js"></script>
+<script src="/js/oldclient/client.js"></script>
+<script src="/js/oldclient/client-ladder.js"></script>
+<script src="/js/oldclient/client-chat.js"></script>
+<script src="/js/battle-tooltips.js"></script>
+<script src="/js/oldclient/client-battle.js"></script>
+<script src="/js/battle-animations.js"></script>
+<script src="/js/battle-animations-moves.js"></script>
+<script src="/data/offline-resource-fallbacks.js"></script>
+<script src="/showdown-scene.js"></script>
+<script type="module" src="./puzzle.js"></script>
+</body>
+</html>

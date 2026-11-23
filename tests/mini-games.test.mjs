@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import test from 'node:test';
+import {parsePuzzleChoice} from '../web/puzzle-choice.js';
 
 // Small DOM/worker harness: run the actual page code, including its event
 // handlers, without loading the simulator or needing a browser in Pages CI.
@@ -67,29 +68,22 @@ test('150%+ is correct when rolls cross 150% and misses when they all fall below
   assert.match(p.node('dg-result').textContent, /18% off · \+10/);
 });
 
-test('puzzle picks only submit a legal joint action; grading and next position work', () => {
-  const p = page('puzzle'); p.receive({ type: 'ready' });
-  assert.equal(p.worker.sent.at(-1).type, 'puzzle');
-  const puzzle = { turn: 4, log: [], foeActive: ['Milotic', 'Gholdengo'], names: ['Kingambit', 'Rillaboom'], you: [], theirs: [], legal: ['move 1, move 3 2', 'switch 3, move 3 2', 'move 1, switch 3'], slots: [[{ part: 'move 1', label: 'Protect' }, { part: 'switch 3', label: 'Switch to Incineroar' }], [{ part: 'move 3 2', label: 'Grassy Glide → Gholdengo' }, { part: 'switch 3', label: 'Switch to Incineroar' }]] };
-  p.receive({ type: 'puzzle', puzzle }); assert.equal(p.node('pz-lock').disabled, true);
-  let slots = p.node('pz-slots').children;
-  slots[0].children[1].children[1].fire('click'); // switch slot A
-  slots = p.node('pz-slots').children;
-  assert.equal(slots[1].children[1].children[1].disabled, true); // duplicate switch forbidden
-  slots[1].children[1].children[0].fire('click');
-  assert.equal(p.node('pz-lock').disabled, false);
-  p.node('pz-lock').fire('click');
-  assert.equal(p.worker.sent.at(-1).choice, 'switch 3, move 3 2');
-  p.receive({ type: 'puzzle-result', result: { step: { same: true, loss: 0, yours: { label: 'Chosen', chance: 60 }, bot: { label: 'Chosen', chance: 60 }, rows: [] }, lines: [] } });
-  assert.match(p.node('pz-result').textContent, /Best move!/);
-  assert.equal(p.node('pz-played').textContent, '1');
-  p.node('pz-result').children.at(-1).fire('click');
-  assert.equal(p.worker.sent.at(-1).type, 'puzzle');
+test('the real BattleRoom command stays within the worker’s joint action list', () => {
+  const legal = ['move 1 2 mega, move 3 -1', 'switch 3, move 3 -1', 'move 1 2, switch 3'];
+  assert.equal(parsePuzzleChoice('/choose move 1 mega 2,move 3 -1|2', 2, legal), legal[0]);
+  assert.equal(parsePuzzleChoice('/choose switch 3,move 3 -1|2', 2, legal), legal[1]);
+  assert.equal(parsePuzzleChoice('/choose switch 3,switch 3|2', 2, legal), null);
+  assert.equal(parsePuzzleChoice('/choose move 1 mega 2,move 3 -1|1', 2, legal), null);
+  assert.equal(parsePuzzleChoice('/choose move 1 mega -2,move 3 -1|2', 2, legal), null);
+  assert.equal(parsePuzzleChoice('/choose move 1 2,move 3 -1 mega|2', 2, legal), null);
+  assert.equal(parsePuzzleChoice('/default|2', 2, legal), null);
 });
 
 test('Games exposes puzzles, and both practice pages link to each other', () => {
   const home = fs.readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
   assert.match(home, /href="\.\/puzzle.html"/); assert.match(home, /What would you do\?/);
   assert.match(page('damage').html, /href="\.\/puzzle.html"/);
-  assert.match(page('puzzle').html, /href="\.\/damage.html"/);
+  const puzzle = fs.readFileSync(new URL('../web/puzzle.html', import.meta.url), 'utf8');
+  assert.match(puzzle, /href="\.\/damage.html"/);
+  assert.match(puzzle, /src="\/js\/oldclient\/client-battle.js"/);
 });
