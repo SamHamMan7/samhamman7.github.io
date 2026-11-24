@@ -1,3 +1,4 @@
 # Preserve built files exactly: offline downloads verify their byte hashes.
 dist/** -text
+web/champions.worker.js -text
 web/games/** -text

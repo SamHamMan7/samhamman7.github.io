@@ -115,13 +115,13 @@ function showResult({step, lines}) {
       if (step.same || loss <= 1) stats.best++;
       try { localStorage.setItem(storageKey, JSON.stringify(stats)); } catch {}
       feedback.append(element('p', `You played ${step.yours.label}.`));
-      feedback.append(element('p', `Estimated win chance: your play ${step.yours.chance}%, Discharge’s pick ${step.bot.chance}%.`));
+      feedback.append(element('p', `Search score out of 100 · Your play ${step.yours.chance} · Discharge’s pick ${step.bot.chance}`));
     }
     if (step.rows?.length) {
       const details = element('details');
       details.append(element('summary', 'Other options Discharge checked'));
       const list = element('ul');
-      for (const row of step.rows) list.append(element('li', `${row.label} · ${row.chance}% estimated win chance`));
+      for (const row of step.rows) list.append(element('li', `${row.label} · ${row.chance}/100 search score`));
       details.append(list);
       feedback.append(details);
     }
