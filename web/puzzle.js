@@ -106,7 +106,7 @@ function showResult({step, lines}) {
   phase = 'result';
   feedback = newFeedback();
   if (step.bot?.label && Number.isFinite(step.bot.chance)) {
-    feedback.append(element('h3', 'Discharge recommends'));
+    feedback.append(element('h3', Number.isInteger(step.turn) ? `Discharge’s turn ${step.turn} pick` : 'Discharge recommends'));
     feedback.append(element('p', step.bot.label, 'broadcast-blue'));
     if (Number.isFinite(step.yours?.chance)) {
       const loss = Math.max(0, step.loss || 0);

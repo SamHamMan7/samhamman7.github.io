@@ -1,6 +1,6 @@
 {
-  "archive": "bot-updates/puzzle-mechanics-v2.zip",
-  "sha256": "ca624c5c132d6600e0199f1ac84ce0d9694deda4d60f690dfd9fa56605da685a",
+  "archive": "bot-updates/puzzle-fast-dragonite-v3.zip",
+  "sha256": "9d52c0086bcb4f442632e19be2c36c5c4347608038f55d9d4e43d52725a2f9e7",
   "botUpdate": {
     "sourceCommit": "f098078",
     "updated": "2026-11-22",
@@ -14,7 +14,7 @@
     "randomBattle": "Very Strong Random Battles use a port of Foul Play (GPL-3.0) searching with poke-engine (MIT) compiled to WebAssembly; the previous bot is the fallback",
     "gameReview": "Finished Champions games are saved in the browser (last 8); review.html replays one in the Champions worker and shows, per decision, what Discharge would have played in the player seat, its win-chance estimate and the replies it expected",
     "damageGame": "damage.html asks the Champions worker (calc message) for a position built from two pool teams and all 16 Showdown damage rolls of one move, for a guessing game",
-    "puzzles": "Showdown controls and local grading with a search score. Preview checks alternative brings against the public opponent roster and models native entry effects."
+    "puzzles": "Showdown controls, labelled turn and local search score. Native matchup preview and a faster Modest Dragonite on the MC501 player practice roster."
   },
   "expectedWorkers": {
     "ai.worker.js": "dec75daabfb61afa9dc8ab5275cf0092677d4934728dc98222553bfc7116e834",
@@ -22,7 +22,7 @@
   },
   "championsWorker": {
     "file": "web/champions.worker.js",
-    "sha256": "176676619b6d5d15d6097b4c5017a144e3ba92d1fe95f95be4306f02687f2788",
-    "builtFrom": "native-puzzle-v1 source plus puzzle-mechanics-v2 overlay, pinned Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
+    "sha256": "5898f5e22df9776092b719fb04d1f887d195de7a89fff91352ef09e085b20893",
+    "builtFrom": "puzzle-fast-dragonite-v3 overlay and pinned Showdown a5df8274e85b0889bf2a9b3422a08b39732374fc"
   }
 }
