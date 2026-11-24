@@ -143,6 +143,14 @@ def update_bot(bot):
 
 
 def finalize():
+    # Passphrase gate (web/gate.js) must run first on the Showdown page too.
+    battle_page = OUT / 'battle.html'
+    if battle_page.exists():
+        html = battle_page.read_text(encoding='utf-8')
+        if '/gate.js' not in html:
+            anchor = '<meta charset="UTF-8" />'
+            assert anchor in html, 'battle.html charset meta not found'
+            battle_page.write_text(html.replace(anchor, anchor + '<script src="/gate.js"></script>', 1), encoding='utf-8')
     metadata_path = SNAPSHOT / 'BROWSER-BOT-UPDATE.json'
     metadata = json.loads(metadata_path.read_text(encoding='utf-8')) if metadata_path.exists() else None
 
