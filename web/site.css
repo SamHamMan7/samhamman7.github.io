@@ -160,6 +160,7 @@ button[type=submit]:hover,#download-offline:hover,.primary:hover,.button.primary
 .task-x.sure{width:auto;padding:0 10px;border-radius:999px;background:var(--red);color:#fff;font-size:12px;font-weight:700}
 .team-form{display:grid;gap:8px}.team-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.team-row input,.team-row select,.team-form textarea{min-height:40px;padding:6px 11px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:inherit;font-size:14px;min-width:0;box-sizing:border-box}.team-row input{flex:1 1 160px}.team-form textarea{width:100%;resize:vertical;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.team-row .button{min-height:40px;display:inline-flex;align-items:center}
 .team-tools{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0 4px;font-size:14px}.team-msg{color:var(--accent);margin:0 0 6px;font-weight:600}.team-msg:empty{display:none}
+#team-sample-select{flex:1 1 180px;width:0;max-width:100%}
 @media(max-width:860px){.play-grid{grid-template-columns:1fr}.cards.games{grid-template-columns:1fr}}
 /* phone pass: bottom tab bar, thumb-sized controls, no zoom-on-focus, shorter lists */
 .nav-icon{display:none}

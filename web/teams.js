@@ -45,6 +45,46 @@
   }
 
   const msg = $('team-msg'), say = t => { msg.textContent = t; };
+  const sampleMenu = $('team-sample-select');
+  if (sampleMenu) {
+    const samples = window.BATTLE_SAMPLE_TEAMS || [];
+    const add = $('team-sample-add'), source = $('team-sample-source');
+    const formats = {gen9ou:'Gen 9 OU',gen9championsvgc2026regmc:'Champions VGC Reg M-C'};
+    for (const [format, label] of Object.entries(formats)) {
+      const group = el('optgroup');
+      group.label = label;
+      for (const sample of samples.filter(team => team.format === format)) {
+        const option = el('option', '', sample.name);
+        option.value = sample.id;
+        group.append(option);
+      }
+      if (group.children.length) sampleMenu.append(group);
+    }
+    const selected = () => samples.find(sample => sample.id === sampleMenu.value);
+    const updateSample = () => {
+      const sample = selected();
+      add.disabled = !sample;
+      source.hidden = !sample;
+      if (sample) source.href = sample.source;
+    };
+    sampleMenu.addEventListener('change', updateSample);
+    add.addEventListener('click', () => {
+      const sample = selected();
+      if (!sample) return;
+      const teams = read(), {format} = sample;
+      const instructions = `Choose it after selecting ${formats[format]} in Pokémon Showdown.`;
+      if (teams.some(t => t.format === format && t.packed === sample.packed)) {
+        return say(`This sample is already saved. ${instructions}`);
+      }
+      const base = sample.name.replace(/[|\]\r\n\/]/g, ' ');
+      const name = teams.some(t => t.name === base) ? `${base} (sample)` : base;
+      teams.push({line:`${format}]${name}|${sample.packed}`});
+      if (!write(teams)) return say('This browser wouldn’t save it.');
+      draw();
+      say(`Added “${name}”. ${instructions}`);
+    });
+    updateSample();
+  }
   function draw() {
     const teams = read();
     $('team-count').textContent = teams.length ? `${teams.length} saved` : '';
