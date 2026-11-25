@@ -1,6 +1,7 @@
 // The official BattleRoom owns the battlefield, choices and targets. This
 // adapter substitutes a single local puzzle worker for the Showdown socket.
 import {parsePuzzleChoice} from './puzzle-choice.js';
+import {feedbackEntry, loadFeedback, saveFeedback} from './puzzle-feedback.js';
 
 const roomElement = document.getElementById('puzzle-room');
 const roomId = 'battle-offline-puzzle';
@@ -22,6 +23,59 @@ function button(text, action) {
   node.type = 'button';
   node.addEventListener('click', action);
   return node;
+}
+
+function exportFeedback() {
+  const items = loadFeedback(localStorage);
+  if (!items.length) return;
+  const exported = new Date().toISOString();
+  const data = new Blob([JSON.stringify({v:1,kind:'puzzle-feedback',exported,items},null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(data);
+  const link = element('a');
+  link.href = url;
+  link.download = 'puzzle-feedback-'+exported.slice(0,10)+'.json';
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+
+function makeFeedbackBox(entry) {
+  const box = element('section','','puzzle-take');
+  box.append(element('h3','Your take'));
+  const note = element('textarea');
+  note.rows = 2;
+  note.maxLength = 2000;
+  note.placeholder = 'Comment (optional)';
+  note.setAttribute('aria-label','Puzzle feedback comment');
+  const status = element('span');
+  status.setAttribute('role','status');
+  let verdict = null;
+  const labels = [['mine','My move is better'],['both','Both are fine'],['bot','Discharge is right']];
+  const choices = labels.map(([key,label])=>{
+    const choice = button(label,()=>{
+      verdict = verdict === key ? null : key;
+      choices.forEach((item,i)=>item.setAttribute('aria-pressed',String(verdict === labels[i][0])));
+    });
+    choice.setAttribute('aria-pressed','false');
+    return choice;
+  });
+  const download = button('Export feedback',exportFeedback);
+  download.disabled = !loadFeedback(localStorage).length;
+  const save = button('Save feedback',()=>{
+    if (!verdict && !note.value.trim()) { status.textContent='Choose a verdict or enter a comment.'; return; }
+    if (!saveFeedback(localStorage,entry,verdict,note.value)) { status.textContent='The browser could not save feedback.'; return; }
+    save.disabled = note.disabled = true;
+    for (const choice of choices) choice.disabled = true;
+    download.disabled = false;
+    status.textContent='Saved on this device.';
+  });
+  const buttons = element('div');
+  buttons.append(...choices);
+  const actions = element('div');
+  actions.append(save,download,status);
+  box.append(buttons,note,actions);
+  return box;
 }
 
 let worker, room, puzzle, feedback, requestId = 0, phase = 'loading';
@@ -101,7 +155,8 @@ function render(position) {
   room.receive('|request|' + JSON.stringify({...position.request, rqid: ++requestId, noCancel: true}));
 }
 
-function showResult({step, lines}) {
+function showResult(result) {
+  const {step,lines} = result;
   if (phase !== 'grading') return;
   phase = 'result';
   feedback = newFeedback();
@@ -128,6 +183,8 @@ function showResult({step, lines}) {
   } else {
     feedback.append(element('p', step.error || 'Discharge could not grade this position.'));
   }
+  const entry = feedbackEntry(puzzle,result);
+  if (entry) feedback.append(makeFeedbackBox(entry));
   feedback.append(button('Next puzzle', ask));
   paint();
   room.request = null;

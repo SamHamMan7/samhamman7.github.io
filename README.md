@@ -27,6 +27,17 @@ The workflow publishes only `dist/`, with no build or paid service required.
 
 ## Offline play
 
+### Puzzle feedback
+
+After a puzzle is graded, **Your take** saves a verdict and optional comment
+on this device. **Export feedback** downloads the feedback and its replay
+records. From the website checkout, run the command below to regrade entries
+marked “My move is better” with the current puzzle worker.
+
+```powershell
+node audit-puzzle-feedback.mjs path/to/puzzle-feedback.json
+```
+
 Use Games → Download for offline on Wi-Fi and wait for Ready for offline.
 About 63 MB includes all three games, sprites, and the rest of the site. Browser
 storage can be cleared by the device; check readiness before a trip.
