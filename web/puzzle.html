@@ -16,6 +16,8 @@
 .puzzle-header strong{overflow:hidden;text-overflow:ellipsis}
 .puzzle-header img{display:block}
 #puzzle-room{position:absolute;inset:50px 0 0;overflow:auto}
+#puzzle-progress{position:absolute;inset:50px 0 auto;box-sizing:border-box;height:27px;line-height:26px;margin:0;padding:0 .65rem;font-size:.875rem;border-bottom:1px solid #8886}
+#puzzle-progress:not([hidden])+#puzzle-room{top:77px}
 #puzzle-room>.ps-room{inset:0}
 #puzzle-room .battle-log{bottom:0}
 #puzzle-room .battle-log-add,#puzzle-room .battle-userlist,#puzzle-room .timerbutton{display:none}
@@ -36,6 +38,7 @@
  <strong>What would you do?</strong>
  <a class="button" href="./damage.html">Damage guess</a>
 </header>
+<p id="puzzle-progress" role="status" aria-label="Local puzzle progress" hidden></p>
 <div id="puzzle-room" class="ps-room" aria-label="Puzzle battle">
  <p role="status">Loading the battle…</p>
 </div>

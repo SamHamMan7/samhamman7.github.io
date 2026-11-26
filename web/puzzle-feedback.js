@@ -1,5 +1,29 @@
 const key = 'puzzle-feedback';
 const verdicts = new Set(['mine', 'both', 'bot']);
+const progressKey = 'puzzle-stats';
+
+export function loadPuzzleProgress(storage) {
+  try {
+    const stats = JSON.parse(storage.getItem(progressKey));
+    if (Number.isSafeInteger(stats?.played) && stats.played >= 0 &&
+        Number.isSafeInteger(stats.best) && stats.best >= 0 && stats.best <= stats.played &&
+        Number.isFinite(stats.loss) && stats.loss >= 0) return stats;
+  } catch {}
+  return {played: 0, best: 0, loss: 0};
+}
+
+export function recordPuzzleGrade(storage, stats, {same, loss}) {
+  const gap = Number.isFinite(loss) ? Math.max(0, loss) : 0;
+  stats.played++;
+  stats.loss += gap;
+  if (same || gap <= 1) stats.best++;
+  try { storage.setItem(progressKey, JSON.stringify(stats)); } catch {}
+}
+
+export function puzzleProgressText({played, best, loss}) {
+  if (!played) return '';
+  return `${played} graded · ${best} within 1 pt · avg gap ${(loss / played).toFixed(1)} pts`;
+}
 
 export function feedbackEntry(position, {step, lines, foe}) {
   if (!position?.record || step?.error || step?.turn !== position.turn ||

@@ -1,16 +1,20 @@
 // The official BattleRoom owns the battlefield, choices and targets. This
 // adapter substitutes a single local puzzle worker for the Showdown socket.
 import {parsePuzzleChoice} from './puzzle-choice.js';
-import {feedbackEntry, loadFeedback, saveFeedback} from './puzzle-feedback.js';
+import {feedbackEntry, loadFeedback, loadPuzzleProgress, puzzleProgressText, recordPuzzleGrade, saveFeedback} from './puzzle-feedback.js';
 
 const roomElement = document.getElementById('puzzle-room');
 const roomId = 'battle-offline-puzzle';
-const storageKey = 'puzzle-stats';
-let stats = {played: 0, best: 0, loss: 0};
-try {
-  const saved = JSON.parse(localStorage.getItem(storageKey));
-  if (saved && Number.isFinite(saved.played) && Number.isFinite(saved.best) && Number.isFinite(saved.loss)) stats = saved;
-} catch {}
+const progressElement = document.getElementById('puzzle-progress');
+let progressStorage;
+try { progressStorage = localStorage; } catch {}
+const progress = loadPuzzleProgress(progressStorage);
+
+function showProgress() {
+  progressElement.textContent = puzzleProgressText(progress);
+  progressElement.hidden = !progress.played;
+}
+showProgress();
 
 const element = (tag, text, className) => {
   const node = document.createElement(tag);
@@ -164,11 +168,8 @@ function showResult(result) {
     feedback.append(element('h3', Number.isInteger(step.turn) ? `Discharge’s turn ${step.turn} pick` : 'Discharge recommends'));
     feedback.append(element('p', step.bot.label, 'broadcast-blue'));
     if (Number.isFinite(step.yours?.chance)) {
-      const loss = Math.max(0, step.loss || 0);
-      stats.played++;
-      stats.loss += loss;
-      if (step.same || loss <= 1) stats.best++;
-      try { localStorage.setItem(storageKey, JSON.stringify(stats)); } catch {}
+      recordPuzzleGrade(progressStorage, progress, step);
+      showProgress();
       feedback.append(element('p', `You played ${step.yours.label}.`));
       feedback.append(element('p', `Search score out of 100 · Your play ${step.yours.chance} · Discharge’s pick ${step.bot.chance}`));
     }
